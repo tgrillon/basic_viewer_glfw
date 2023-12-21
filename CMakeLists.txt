@@ -7,11 +7,13 @@ project(OpenGL)
 find_package(CGAL REQUIRED COMPONENTS Core)
 
 add_subdirectory (vendor/glfw)
+add_subdirectory (vendor/glm)
 
 include_directories (
     .
     vendor/glfw/include/
     vendor/glad/include/
+    vendor/glm/
     ${CGAL_DIR}/Basic_viewer/include/ # TEMPO
 )
 
@@ -25,7 +27,7 @@ file (GLOB_RECURSE PROJECT_SOURCES *.cpp
                                    *.cc
                                    *.c)
 
-add_executable (${PROJECT_NAME} ${VENDORS_SOURCES} ${PROJET_SOURCES} ${PROJET_HEADERS} "main.cpp" "program.hpp" "program.cpp")
+add_executable (${PROJECT_NAME} ${VENDORS_SOURCES} ${PROJET_SOURCES} ${PROJET_HEADERS} "main.cpp")
 
 target_link_libraries(${PROJECT_NAME} glfw CGAL::CGAL)
 add_definitions (-DGLFW_INCLUDE_NONE
