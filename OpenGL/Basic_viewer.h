@@ -545,10 +545,10 @@ namespace OpenGL{
 
     void draw_rays() {
       glUseProgram(m_render_p_l);
-      glLineWidth(m_size_rays);
       
       glBindVertexArray(m_vao[VAO_MONO_RAYS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+      glLineWidth(m_size_rays);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_RAYS));
     
       glBindVertexArray(m_vao[VAO_COLORED_RAYS]);
@@ -581,10 +581,10 @@ namespace OpenGL{
 
     void draw_edges() {
       glUseProgram(m_render_p_l);
-      glLineWidth(m_size_edges);
             
       glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+      glLineWidth(m_size_edges);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
     
       glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
