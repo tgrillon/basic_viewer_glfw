@@ -142,7 +142,7 @@ namespace OpenGL{
     }
 
     // OpenGL 2.1 with compatibilty
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
@@ -590,11 +590,11 @@ namespace OpenGL{
             
       glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
-      glLineWidth(m_size_edges);
+      glLineWidth(m_size_edges + 5.0f);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
     
       glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
-      glLineWidth(m_size_edges);
+      glLineWidth(m_size_edges + 5.0f);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
       
     }
