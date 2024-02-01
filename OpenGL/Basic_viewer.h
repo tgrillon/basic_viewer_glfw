@@ -143,7 +143,7 @@ namespace OpenGL{
 
     // OpenGL 2.1 with compatibilty
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
     glfwSetErrorCallback(glfwErrorCallback);
@@ -228,7 +228,7 @@ namespace OpenGL{
     clip_plane(0, 1, 0, 0),
 
     m_are_buffers_initialized(false),
-    m_is_opengl_4_3(false),
+    m_is_opengl_4_3(true),
     rendering_mode(DRAW_ALL)
     {
       // modelView = glm::translate(glm::mat4(1.f), glm::vec3(1,0,0));
@@ -334,10 +334,10 @@ namespace OpenGL{
 
     void compileShaders()
     { 
-      const char* face_vert = !m_is_opengl_4_3 ? vertex_source_color : vertex_source_color_comp;
-      const char* face_frag = !m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
-      const char* pl_vert = !m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
-      const char* pl_frag = !m_is_opengl_4_3 ? fragment_source_p_l : fragment_source_p_l_comp;
+      const char* face_vert = m_is_opengl_4_3 ? vertex_source_color : vertex_source_color_comp;
+      const char* face_frag = m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
+      const char* pl_vert = m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
+      const char* pl_frag = m_is_opengl_4_3 ? fragment_source_p_l : fragment_source_p_l_comp;
 
       m_render_face = loadShader(face_vert, face_frag, "FACE");
       m_render_p_l = loadShader(pl_vert, pl_frag, "PL");
@@ -522,6 +522,7 @@ namespace OpenGL{
       
       glEnable(GL_DEPTH_TEST);
       glEnable(GL_PROGRAM_POINT_SIZE);
+      glEnable(GL_LINE_SMOOTH);
       
       updateUniforms();
 
@@ -529,7 +530,7 @@ namespace OpenGL{
       if (m_draw_edges)     { draw_edges(); }
       // if (m_draw_rays)      { draw_rays(); } 
       if (m_draw_lines)     { draw_lines(); }
-      // if (m_draw_faces)     { draw_faces(); }
+      if (m_draw_faces)     { draw_faces(); }
     }
 
     void draw_faces(){
