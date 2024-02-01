@@ -187,6 +187,8 @@ namespace OpenGL{
     printf("GLFW\t %s\n", glfwGetVersionString());
     printf("OpenGL\t %s\n", glGetString(GL_VERSION));
     printf("GLSL\t %s\n\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Renderer\t %s\n\n", glGetString(GL_RENDERER));
+    printf("Vendor\t %s\n\n", glGetString(GL_VENDOR));
 
     return window;
   }
