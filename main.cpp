@@ -79,11 +79,6 @@ int main(int argc, char* argb[])
 
     scene.add_segment(Point(0.5f,0.5f,1), Point(0.5,-0.5f,1), CGAL::Color(0, 0, 255));
 
-    scene.add_segment(Point(0.5f,0.5f,0), Point(0.5,0.5f,1), CGAL::Color(128, 0, 255));
-    scene.add_segment(Point(-0.5f,0.5f,0), Point(-0.5,0.5f,1), CGAL::Color(128, 0, 255));
-    scene.add_segment(Point(-0.5f,-0.5f,0), Point(-0.5,-0.5f,1), CGAL::Color(128, 0, 255));
-    scene.add_segment(Point(0.5f,-0.5f,0), Point(0.5,-0.5f,1), CGAL::Color(128, 0, 255));
-
     CGAL::OpenGL::draw_graphics_scene(scene, "Test opengl");
 
     return EXIT_SUCCESS;

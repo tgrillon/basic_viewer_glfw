@@ -211,10 +211,10 @@ namespace OpenGL{
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     
-    m_size_points(70.),
-    m_size_edges(3.1),
-    m_size_rays(3.1),
-    m_size_lines(3.1),
+    m_size_points(8.),
+    m_size_edges(4.),
+    m_size_rays(4.),
+    m_size_lines(4.),
 
     m_faces_mono_color(1.f,0,0,1.0f),
 
@@ -522,11 +522,13 @@ namespace OpenGL{
       if(!m_are_buffers_initialized) { initialiseBuffers(); }
       
       glEnable(GL_DEPTH_TEST);
+      glEnable(GL_PROGRAM_POINT_SIZE);
+      glEnable(GL_LINE_SMOOTH);
       
       updateUniforms();
 
       if (m_draw_edges)     { draw_edges(); }
-      if (false)     { draw_faces(); }
+      if (m_draw_faces)     { draw_faces(); }
       if (m_draw_rays)      { draw_rays(); } 
       if (m_draw_vertices)  { draw_vertices(); }
       if (m_draw_lines)     { draw_lines(); }
@@ -587,7 +589,7 @@ namespace OpenGL{
       glLineWidth(m_size_edges);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
     
-      glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
+      glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
       
     }
