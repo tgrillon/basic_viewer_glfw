@@ -211,10 +211,10 @@ namespace OpenGL{
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     
-    m_size_points(8.),
+    m_size_points(2.),
     m_size_edges(4.),
-    m_size_rays(4.),
-    m_size_lines(4.),
+    m_size_rays(2.),
+    m_size_lines(2.),
 
     m_faces_mono_color(1.f,0,0,1.0f),
 

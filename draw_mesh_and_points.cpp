@@ -28,17 +28,23 @@ struct Graphics_scene_options_green_points:
   { return CGAL::IO::Color(0,220,0); }
 };
 
-int main(void)
+int main(int argc, char** argv)
 {
   std::vector<Pwn> points;
 
-  if(!CGAL::IO::read_points(CGAL::data_file_path("points_3/triangles.xyz"), std::back_inserter(points),
+  std::string filepath = "points_3/kitten.xyz";
+  if (argc>1) {
+    filepath = argv[1];
+  }
+
+  if(!CGAL::IO::read_points(CGAL::data_file_path(filepath), std::back_inserter(points),
                             CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>())
                                              .normal_map(CGAL::Second_of_pair_property_map<Pwn>())))
   {
-    std::cerr << "Error: cannot read input file " << CGAL::data_file_path("points_3/sphere_1k.xyz") << std::endl;
+    std::cerr << "Error: cannot read input file " << CGAL::data_file_path(filepath) << std::endl;
     return EXIT_FAILURE;
   }
+
 
   Polyhedron output_mesh;
     std::cout << "bbb"; 
@@ -60,10 +66,6 @@ int main(void)
     CGAL::Graphics_scene scene;
     CGAL::add_to_graphics_scene(point_set, scene, Graphics_scene_options_green_points());
     CGAL::add_to_graphics_scene(output_mesh, scene);
-
-    auto array = scene.get_array_of_index(CGAL::Graphics_scene::POS_COLORED_POINTS);
-    auto array2 = scene.get_array_of_index(CGAL::Graphics_scene::POS_MONO_POINTS);
-
     CGAL::OpenGL::draw_graphics_scene(scene);
   }
   else
