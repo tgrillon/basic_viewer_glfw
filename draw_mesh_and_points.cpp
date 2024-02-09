@@ -32,18 +32,20 @@ int main(void)
 {
   std::vector<Pwn> points;
 
-  if(!CGAL::IO::read_points(CGAL::data_file_path("points_3/kitten.xyz"), std::back_inserter(points),
+  if(!CGAL::IO::read_points(CGAL::data_file_path("points_3/triangles.xyz"), std::back_inserter(points),
                             CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>())
                                              .normal_map(CGAL::Second_of_pair_property_map<Pwn>())))
   {
-    std::cerr << "Error: cannot read input file " << CGAL::data_file_path("points_3/kitten.xyz") << std::endl;
+    std::cerr << "Error: cannot read input file " << CGAL::data_file_path("points_3/sphere_1k.xyz") << std::endl;
     return EXIT_FAILURE;
   }
 
   Polyhedron output_mesh;
+    std::cout << "bbb"; 
 
   double average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
     (points, 6, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
+    std::cout << "aaaaaaaaa"; 
 
   if (CGAL::poisson_surface_reconstruction_delaunay
       (points.begin(), points.end(),
@@ -58,7 +60,10 @@ int main(void)
     CGAL::Graphics_scene scene;
     CGAL::add_to_graphics_scene(point_set, scene, Graphics_scene_options_green_points());
     CGAL::add_to_graphics_scene(output_mesh, scene);
-    std::cout << "aaaaaaaaa"; 
+
+    auto array = scene.get_array_of_index(CGAL::Graphics_scene::POS_COLORED_POINTS);
+    auto array2 = scene.get_array_of_index(CGAL::Graphics_scene::POS_MONO_POINTS);
+
     CGAL::OpenGL::draw_graphics_scene(scene);
   }
   else
