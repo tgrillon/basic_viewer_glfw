@@ -5,6 +5,8 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "Shader.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -143,7 +145,7 @@ namespace OpenGL{
 
     // OpenGL 2.1 with compatibilty
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
     glfwSetErrorCallback(glfwErrorCallback);
@@ -211,10 +213,10 @@ namespace OpenGL{
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     
-    m_size_points(4.),
+    m_size_points(2.),
     m_size_edges(4.),
-    m_size_rays(3.1),
-    m_size_lines(7.),
+    m_size_rays(2.),
+    m_size_lines(2.),
 
     m_faces_mono_color(1.f,0,0,1.0f),
 
@@ -243,6 +245,8 @@ namespace OpenGL{
     void show()
     {
     m_window = initialise(m_title);
+    glfwSetKeyCallback(m_window, handle_inputs);
+
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
@@ -250,6 +254,7 @@ namespace OpenGL{
     if (major > 4 || major == 4 && minor >= 3){
       m_is_opengl_4_3 = true;
     }
+
 
     compileShaders();
 
@@ -267,6 +272,8 @@ namespace OpenGL{
         glfwSwapBuffers(m_window);
         glfwPollEvents();
 
+
+
         
       }
 
@@ -274,74 +281,16 @@ namespace OpenGL{
     }
 
   private:
-    void checkCompileErrors(GLuint shader, std::string type, std::string name)
-    {
-        GLint success;
-        GLchar infoLog[1024];
-        std::cout << "Checking shader : " << shader << " " << type << "_" << name << "\n";
-
-        if (type != "PROGRAM")
-        {
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-            std::cout << "success : " << success << "\n";
-
-            if (!success)
-            {
-                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "_" << name << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-            }
-        }
-        else
-        {
-            glGetProgramiv(shader, GL_LINK_STATUS, &success);
-            std::cout << "success : " << success << "\n";
-
-            if (!success)
-            {
-                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "_" << name << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-            }
-        }
-    }
-
-    unsigned int loadShader(std::string src_vertex, std::string src_fragment, std::string name="") {
-      unsigned int vshader = glCreateShader(GL_VERTEX_SHADER);
-      const char* source_ = src_vertex.c_str();  
-      glShaderSource(vshader, 1, &source_, NULL);
-      glCompileShader(vshader);
-      checkCompileErrors(vshader, "VERTEX", name);
-      
-      source_ = src_fragment.c_str();
-      unsigned int fshader = glCreateShader(GL_FRAGMENT_SHADER);
-      glShaderSource(fshader, 1, &source_, NULL);
-      glCompileShader(fshader);
-      checkCompileErrors(fshader, "FRAGMENT", name);
-
-      unsigned int m_render = glCreateProgram();
-      glAttachShader(m_render, vshader);
-      glAttachShader(m_render, fshader);
-
-      glLinkProgram(m_render);
-      checkCompileErrors(m_render, "PROGRAM", name);
-
-      glDeleteShader(vshader);
-      glDeleteShader(fshader);
-
-      return m_render;
-
-    }
-
-
     void compileShaders()
     { 
-      const char* face_vert = !m_is_opengl_4_3 ? vertex_source_color : vertex_source_color_comp;
-      const char* face_frag = !m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
-      const char* pl_vert = !m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
-      const char* pl_frag = !m_is_opengl_4_3 ? fragment_source_p_l : fragment_source_p_l_comp;
+      const char* face_vert = m_is_opengl_4_3 ? vertex_source_color : vertex_source_color_comp;
+      const char* face_frag = m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
+      const char* pl_vert = m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
+      const char* pl_frag = m_is_opengl_4_3 ? fragment_source_p_l : fragment_source_p_l_comp;
 
-      m_render_face = loadShader(face_vert, face_frag, "FACE");
-      m_render_p_l = loadShader(pl_vert, pl_frag, "PL");
-      m_render_plane = loadShader(vertex_source_clipping_plane, fragment_source_clipping_plane, "PLANE");
+      face_shader = Shader::loadShader(face_vert, face_frag, "FACE");
+      pl_shader = Shader::loadShader(pl_vert, pl_frag, "PL");
+      render_plane_shader = Shader::loadShader(vertex_source_clipping_plane, fragment_source_clipping_plane, "PLANE");
     }
 
     void loadBuffer(int i, int location, int gsEnum, int dataCount){ 
@@ -456,39 +405,38 @@ namespace OpenGL{
     }
 
     void setFaceUniforms() {
-      glUseProgram(m_render_face);
+      face_shader.use();
 
-      // vertex uniforms 
-      int mvp_location = glGetUniformLocation(m_render_face, "mvp_matrix");      
-      int mv_location = glGetUniformLocation(m_render_face, "mv_matrix");
-      int psize_location = glGetUniformLocation(m_render_face, "point_size");      
+      face_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
+      face_shader.setMatrix4f("mv_matrix", glm::value_ptr(modelView));
+      face_shader.setFloat("point_size", m_size_points);
       
-      glUniformMatrix4fv(mvp_location, 1, GL_FALSE, glm::value_ptr(modelViewProjection));
-      glUniformMatrix4fv(mv_location, 1, GL_FALSE, glm::value_ptr(modelView));
-      glUniform1f(psize_location, GLfloat(m_size_points));
+      face_shader.setVec4f("light_pos", glm::value_ptr(m_light_position));
+      face_shader.setVec4f("light_diff", glm::value_ptr(m_diffuse));
+      face_shader.setVec4f("light_spec", glm::value_ptr(m_specular));
+      face_shader.setVec4f("light_amb", glm::value_ptr(m_ambient));
+      face_shader.setFloat("spec_power", m_shininess);
 
-      // fragment uniforms 
-      int light_pos_location = glGetUniformLocation(m_render_face, "light_pos");
-      int light_diff_location = glGetUniformLocation(m_render_face, "light_diff");
-      int light_spec_location = glGetUniformLocation(m_render_face, "light_spec");
-      int light_amb_location = glGetUniformLocation(m_render_face, "light_amb");
-      int shininess_location = glGetUniformLocation(m_render_face, "spec_power");
+      face_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
+      face_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
+      face_shader.setFloat("rendering_transparency", m_rendering_transparency);
+      face_shader.setFloat("rendering_mode", rendering_mode);
+      
+    }
+    
+    void setPLUniforms() {
+      pl_shader.use();
+      
+      pl_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
+      pl_shader.setFloat("point_size", m_size_points);
+      pl_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
+      pl_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
+      pl_shader.setFloat("rendering_mode", rendering_mode);
+      
+    }
 
-      int clipPlane_location = glGetUniformLocation(m_render_face, "clipPlane");
-      int pointPlane_location = glGetUniformLocation(m_render_face, "pointPlane");
-      int rendering_mode_location = glGetUniformLocation(m_render_face, "rendering_mode");
-      int rendering_transparency_location = glGetUniformLocation(m_render_face, "rendering_transparency");
-
-      glUniform4fv(light_pos_location, 1, glm::value_ptr(m_light_position));
-      glUniform4fv(light_diff_location, 1, glm::value_ptr(m_diffuse));
-      glUniform4fv(light_spec_location, 1, glm::value_ptr(m_specular));
-      glUniform4fv(light_amb_location, 1, glm::value_ptr(m_ambient));
-      glUniform1f(shininess_location, m_shininess);
-
-      glUniform4fv(clipPlane_location, 1, glm::value_ptr(clip_plane));
-      glUniform4fv(pointPlane_location, 1, glm::value_ptr(point_plane));
-      glUniform1f(rendering_transparency_location, m_rendering_transparency);
-      glUniform1f(rendering_mode_location,rendering_mode);
+    void setClippingUniforms() {
+      
     }
     
     void setPLUniforms() {
@@ -522,21 +470,23 @@ namespace OpenGL{
       
       glEnable(GL_DEPTH_TEST);
       glEnable(GL_PROGRAM_POINT_SIZE);
+      glEnable(GL_LINE_SMOOTH);
       
       updateUniforms();
 
-      if (m_draw_vertices)  { draw_vertices(); }
       if (m_draw_edges)     { draw_edges(); }
-      // if (m_draw_rays)      { draw_rays(); } 
+      if (m_draw_faces)     { draw_faces(); }
+      if (m_draw_rays)      { draw_rays(); } 
+      if (m_draw_vertices)  { draw_vertices(); }
       if (m_draw_lines)     { draw_lines(); }
-      // if (m_draw_faces)     { draw_faces(); }
     }
 
     void draw_faces(){
-      glUseProgram(m_render_face);
+      face_shader.use();
 
       glBindVertexArray(m_vao[VAO_MONO_FACES]);
       glVertexAttrib4fv(2, glm::value_ptr(m_faces_mono_color));
+
       glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_FACES));
     
       glBindVertexArray(m_vao[VAO_COLORED_FACES]);
@@ -544,33 +494,32 @@ namespace OpenGL{
     }
 
     void draw_rays() {
-      glUseProgram(m_render_p_l);
+      pl_shader.use();
       
       glBindVertexArray(m_vao[VAO_MONO_RAYS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+
       glLineWidth(m_size_rays);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_RAYS));
     
       glBindVertexArray(m_vao[VAO_COLORED_RAYS]);
-      glLineWidth(m_size_rays);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_RAYS));
     }
 
     void draw_vertices() {
-      glUseProgram(m_render_p_l);
+      pl_shader.use();
 
-      auto array = m_scene.get_array_of_index(Graphics_scene::POS_COLORED_POINTS);
-      
       glBindVertexArray(m_vao[VAO_MONO_POINTS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
       glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_POINTS));
     
       glBindVertexArray(m_vao[VAO_COLORED_POINTS]);
       glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_POINTS));
+
     }
 
     void draw_lines() {
-      glUseProgram(m_render_p_l);
+      pl_shader.use();
       
       glBindVertexArray(m_vao[VAO_MONO_LINES]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
@@ -578,12 +527,11 @@ namespace OpenGL{
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_LINES));
     
       glBindVertexArray(m_vao[VAO_COLORED_LINES]);
-      glLineWidth(m_size_lines);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_LINES));
     }
 
     void draw_edges() {
-      glUseProgram(m_render_p_l);
+      pl_shader.use();
             
       glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
       glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
@@ -591,14 +539,19 @@ namespace OpenGL{
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
     
       glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
-      glLineWidth(m_size_edges);
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
       
     }
 
-    // void draw(unsigned int program, ) {
-
-    // }
+    void handle_input(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        if (action == GLFW_PRESS) {
+          switch (key){
+            case GLFW_KEY_UP:
+              break;
+          }
+        }
+    }
 
       
   public:
@@ -628,9 +581,11 @@ namespace OpenGL{
     glm::mat4 modelView;
     glm::mat4 modelViewProjection;
     float m_rendering_transparency;
-    
     RenderMode rendering_mode;
     bool m_is_opengl_4_3;
+
+    Shader pl_shader, face_shader, render_plane_shader;
+    
     
 
     enum
@@ -648,9 +603,6 @@ namespace OpenGL{
       NB_VAO_BUFFERS
     };
     GLuint m_vao[NB_VAO_BUFFERS];
-
-    // Render programms
-    unsigned int m_render_face, m_render_p_l, m_render_plane;
 
     static const unsigned int NB_GL_BUFFERS=(Graphics_scene::END_POS-Graphics_scene::BEGIN_POS)+
       (Graphics_scene::END_COLOR-Graphics_scene::BEGIN_COLOR)+3; // +2 for normals (mono and color), +1 for clipping plane
