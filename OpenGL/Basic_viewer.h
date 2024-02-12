@@ -245,7 +245,9 @@ namespace OpenGL{
     void show()
     {
     m_window = initialise(m_title);
-    glfwSetKeyCallback(m_window, handle_inputs);
+
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetKeyCallback(m_window, handle_input);
 
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -272,9 +274,6 @@ namespace OpenGL{
         glfwSwapBuffers(m_window);
         glfwPollEvents();
 
-
-
-        
       }
 
       glfwTerminate();
@@ -439,31 +438,6 @@ namespace OpenGL{
       
     }
     
-    void setPLUniforms() {
-      glUseProgram(m_render_p_l);
-      
-      // vertex uniforms 
-      int mvp_location = glGetUniformLocation(m_render_p_l, "mvp_matrix");      
-      int psize_location = glGetUniformLocation(m_render_p_l, "point_size");  
-      
-      glUniformMatrix4fv(mvp_location, 1, GL_FALSE, glm::value_ptr(modelViewProjection));
-      glUniform1f(psize_location, GLfloat(m_size_points));
-      
-      // frag uniforms 
-      int clipPlane_location = glGetUniformLocation(m_render_p_l, "clipPlane");
-      int pointPlane_location = glGetUniformLocation(m_render_p_l, "pointPlane");
-      int rendering_mode_location = glGetUniformLocation(m_render_p_l, "rendering_mode");
-      
-      glUniform4fv(clipPlane_location, 1, glm::value_ptr(clip_plane));
-      glUniform4fv(pointPlane_location, 1, glm::value_ptr(point_plane));
-
-      glUniform1f(rendering_mode_location, rendering_mode);
-    }
-
-    void setClippingUniforms() {
-      
-    }
-
     void renderScene(float time)
     {
       if(!m_are_buffers_initialized) { initialiseBuffers(); }
@@ -542,9 +516,12 @@ namespace OpenGL{
       glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
       
     }
+  public:
 
-    void handle_input(GLFWwindow* window, int key, int scancode, int action, int mods)
+    static void handle_input(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
+        Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+
         if (action == GLFW_PRESS) {
           switch (key){
             case GLFW_KEY_UP:
@@ -554,7 +531,6 @@ namespace OpenGL{
     }
 
       
-  public:
 
 
   private:
