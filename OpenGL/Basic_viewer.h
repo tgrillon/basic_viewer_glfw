@@ -229,10 +229,14 @@ namespace OpenGL{
     point_plane(0, 100, 0, 0),
     clip_plane(0, 1, 0, 0),
 
+    cam_rotation(1.0f),
+
     m_are_buffers_initialized(false),
     m_is_opengl_4_3(false),
     rendering_mode(DRAW_ALL)
     {
+      cam_position = glm::translate(glm::mat4(1.0f), glm::vec3(0));
+
       // modelView = glm::translate(glm::mat4(1.f), glm::vec3(1,0,0));
       modelView = glm::lookAt(glm::vec3(0.0f,0.0f,10.0f), glm::vec3(0.0f,0.0f,-1.0f), glm::vec3(0.0f,1.0f,0.0f));
   
@@ -247,7 +251,7 @@ namespace OpenGL{
     m_window = initialise(m_title);
 
     glfwSetWindowUserPointer(m_window, this);
-    glfwSetKeyCallback(m_window, handle_input);
+    glfwSetKeyCallback(m_window, aggregate_inputs);
 
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -272,7 +276,11 @@ namespace OpenGL{
         renderScene(test);
 
         glfwSwapBuffers(m_window);
+        pressed_keys.clear();
         glfwPollEvents();
+
+        handle_inputs();
+
 
       }
 
@@ -383,14 +391,13 @@ namespace OpenGL{
     void updateUniforms(){
 
       // vertex uniforms
-      glm::mat4 model = glm::mat4(1.0f);
       glm::mat4 view = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
       float radius = 10.0f;
 
       float camX = static_cast<float>(sin(glfwGetTime()) * radius);
       float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
 
-      view = glm::lookAt(glm::vec3(camX, 0.0f, camZ), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+      view = cam_position * cam_rotation;
       glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
 
       modelViewProjection = projection * view;
@@ -518,21 +525,47 @@ namespace OpenGL{
     }
   public:
 
-    static void handle_input(GLFWwindow* window, int key, int scancode, int action, int mods)
+    static void aggregate_inputs(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+      Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
 
-        if (action == GLFW_PRESS) {
-          switch (key){
-            case GLFW_KEY_UP:
-              break;
-          }
-        }
+      if (action == GLFW_PRESS){
+        viewer->pressed_keys[key] = true;
+        viewer->holding_keys[key] = true;
+        return;
+      }
+
+      if (action == GLFW_RELEASE){
+        viewer->holding_keys[key] = false;
+        return;
+      }
     }
 
-      
+    void handle_inputs() {
+      const float delta = 1.0f/5000;
+      bool shift = holding_keys[GLFW_KEY_LEFT_SHIFT];
 
+      if (holding_keys[GLFW_KEY_RIGHT]){
+        cam_position = glm::translate(cam_position, glm::vec3(-delta, 0, 0));
+      }
+      if (holding_keys[GLFW_KEY_LEFT]){
+        cam_position = glm::translate(cam_position, glm::vec3(delta, 0, 0));
+      }
+      if (holding_keys[GLFW_KEY_UP] && !shift){
+        cam_position = glm::translate(cam_position, glm::vec3(0, -delta, 0));
+      }
+      if (holding_keys[GLFW_KEY_DOWN] && !shift){
+        cam_position = glm::translate(cam_position, glm::vec3(0, delta, 0));
+      }
+      if (holding_keys[GLFW_KEY_UP] && shift){
+        cam_position = glm::translate(cam_position, glm::vec3(0, 0, delta));
+      }
+      if (holding_keys[GLFW_KEY_DOWN] && shift){
+        cam_position = glm::translate(cam_position, glm::vec3(0, 0, -delta));
+      }
 
+    }
+    
   private:
     GLFWwindow *m_window;
     const Graphics_scene &m_scene;
@@ -562,6 +595,8 @@ namespace OpenGL{
 
     Shader pl_shader, face_shader, render_plane_shader;
     
+    glm::mat4 cam_position, cam_rotation;
+    std::unordered_map<int, bool> holding_keys, pressed_keys;
     
 
     enum

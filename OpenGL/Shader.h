@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <map>
+#include <string>
 
 class Shader { 
 public:
@@ -60,7 +61,7 @@ public:
     }
 
 private:
-    std::unordered_map<char*, int> uniforms;
+    std::unordered_map<std::string, int> uniforms;
     int program;
 
     static void checkCompileErrors(GLuint shader, std::string type, std::string name) {
