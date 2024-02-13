@@ -1,6 +1,6 @@
 // System headers
 #include <CGAL/Graphics_scene.h>
-#include "OpenGL/Basic_viewer.h"
+#include "OpenGL/Basic_viewer_impl.h"
 #include <CGAL/Point_3.h>
 #include <CGAL/Vector_3.h>
 #include <CGAL/Cartesian.h>
