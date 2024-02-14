@@ -19,7 +19,7 @@ namespace OpenGL{
 
     // OpenGL 2.1 with compatibilty
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
     glfwSetErrorCallback(glfwErrorCallback);
@@ -101,13 +101,13 @@ namespace OpenGL{
     m_diffuse(0.9f, 0.9f, 0.9f, 1.0f),
     m_specular(0.0f, 0.0f, 0.0f, 1.0f),
 
-    point_plane(0, 0, 0, 0),
-    clip_plane(0, 0, 0, 0),
+    point_plane(0, 0, 0, 1),
+    clip_plane(0, 0, 1, 0),
 
     cam_rotation(1.0f),
 
     m_are_buffers_initialized(false),
-    m_is_opengl_4_3(true)
+    m_is_opengl_4_3(false)
     {
       init_keys_actions();
       cam_position = glm::translate(glm::mat4(1.0f), glm::vec3(0));
@@ -196,6 +196,7 @@ namespace OpenGL{
     // 1) POINT SHADER
 
     // 1.1) Mono points
+    pl_shader.use();
     glBindVertexArray(m_vao[VAO_MONO_POINTS]); 
     loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_POINTS, 3);
 
@@ -240,7 +241,8 @@ namespace OpenGL{
     // 5) FACE SHADER
 
     // 5.1) Mono faces
-    glBindVertexArray(m_vao[VAO_MONO_FACES]); 
+    face_shader.use();
+    glBindVertexArray(m_vao[VAO_MONO_FACES]);
     loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_FACES, 3);
     loadBuffer(bufn++, 1, Graphics_scene::FLAT_NORMAL_MONO_FACES, 3);
 
@@ -253,6 +255,8 @@ namespace OpenGL{
     // 6) clipping plane shader
     if (m_is_opengl_4_3) {
       generate_clipping_plane();
+      plane_shader.use();
+
       glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
       glBindBuffer(GL_ARRAY_BUFFER, buffers[bufn++]);
       glBufferData(GL_ARRAY_BUFFER,
@@ -307,7 +311,7 @@ namespace OpenGL{
 
     face_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
     face_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
-    face_shader.setFloat("rendering_transparency", m_rendering_transparency);
+    face_shader.setFloat("rendering_transparency", m_clipping_plane_rendering_transparency);
     face_shader.setFloat("rendering_mode", rendering_mode);
   }
 
@@ -327,7 +331,7 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::setClippingUniforms() {
-    glm::mat4 clipping_mMatrix(1);
+    glm::mat4 clipping_mMatrix = glm::mat4(1.0f);
     plane_shader.use();
 
     plane_shader.setMatrix4f("vp_matrix", glm::value_ptr(modelViewProjection));
@@ -482,14 +486,14 @@ namespace OpenGL{
       {
         const float pos = float(size*(2.0*i/nbSubdivisions-1.0));
         array.push_back(pos);
-        array.push_back(float(-size));
+        array.push_back(-float(size));
         array.push_back(0.f);
 
         array.push_back(pos);
-        array.push_back(float(+size));
+        array.push_back(float(size));
         array.push_back(0.f);
 
-        array.push_back(float(-size));
+        array.push_back(-float(size));
         array.push_back(pos);
         array.push_back(0.f);
 
@@ -506,6 +510,7 @@ namespace OpenGL{
       glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
       glLineWidth(0.1f);
       glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
+      glLineWidth(1.f);
   }
 
   void Basic_Viewer::aggregate_inputs(GLFWwindow* window, int key, int scancode, int action, int mods)

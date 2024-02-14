@@ -97,7 +97,6 @@ namespace OpenGL{
     float m_shininess;
     glm::mat4 modelView;
     glm::mat4 modelViewProjection;
-    float m_rendering_transparency;
     bool m_is_opengl_4_3;
 
     Shader pl_shader, face_shader, plane_shader;
@@ -113,7 +112,7 @@ namespace OpenGL{
         CLIPPING_PLANE_END_INDEX
       };
 
-    int m_use_clipping_plane=CLIPPING_PLANE_SOLID_HALF_WIRE_HALF;
+    int m_use_clipping_plane=CLIPPING_PLANE_OFF;
     std::vector<float> m_array_for_clipping_plane;
 
     // variables for clipping plane
