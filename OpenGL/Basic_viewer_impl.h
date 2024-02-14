@@ -582,7 +582,7 @@ namespace OpenGL{
     add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
     add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
 
-    add_action(GLFW_KEY_C, true, CLIPPLANE);
+    add_action(GLFW_KEY_C, false, CLIPPLANE);
   }
   
   // Blocking call
