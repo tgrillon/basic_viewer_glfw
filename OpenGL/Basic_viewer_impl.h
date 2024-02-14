@@ -84,7 +84,7 @@ namespace OpenGL{
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     
-    m_size_points(2.),
+    m_size_points(20.),
     m_size_edges(4.),
     m_size_rays(2.),
     m_size_lines(2.),
@@ -394,33 +394,8 @@ namespace OpenGL{
     viewer->on_key_event(key, scancode, action, mods);
   }
 
-  // void Basic_Viewer::handle_inputs() {
-  //   const float delta = 1.0f/5000;
-  //   bool shift = holding_keys[GLFW_KEY_LEFT_SHIFT];
-
-  //   if (holding_keys[GLFW_KEY_RIGHT]){
-  //     cam_position = glm::translate(cam_position, glm::vec3(-delta, 0, 0));
-  //   }
-  //   if (holding_keys[GLFW_KEY_LEFT]){
-  //     cam_position = glm::translate(cam_position, glm::vec3(delta, 0, 0));
-  //   }
-  //   if (holding_keys[GLFW_KEY_UP] && !shift){
-  //     cam_position = glm::translate(cam_position, glm::vec3(0, -delta, 0));
-  //   }
-  //   if (holding_keys[GLFW_KEY_DOWN] && !shift){
-  //     cam_position = glm::translate(cam_position, glm::vec3(0, delta, 0));
-  //   }
-  //   if (holding_keys[GLFW_KEY_UP] && shift){
-  //     cam_position = glm::translate(cam_position, glm::vec3(0, 0, delta));
-  //   }
-  //   if (holding_keys[GLFW_KEY_DOWN] && shift){
-  //     cam_position = glm::translate(cam_position, glm::vec3(0, 0, -delta));
-  //   }
-
-  // }
-
   void Basic_Viewer::handle_actions(ActionEnum action){
-    const float delta = 1.0f/5000;
+    const float delta = 1.0f/60;
 
     switch (action){
       case UP:
