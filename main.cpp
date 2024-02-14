@@ -56,10 +56,10 @@ int main(int argc, char* argb[])
     scene.add_point(Point(-0.5,-0.5f,0), CGAL::Color(0, 255, 0));
     scene.add_point(Point(0.5f,-0.5f,0), CGAL::Color(0, 255, 0));
 
-    scene.add_point(Point(-0.5f,0.5f,1), CGAL::Color(0, 255, 0));
-    scene.add_point(Point(0.5f,0.5f,1), CGAL::Color(0, 255, 0));
-    scene.add_point(Point(-0.5,-0.5f,1), CGAL::Color(0, 255, 0));
-    scene.add_point(Point(0.5f,-0.5f,1), CGAL::Color(0, 255, 0));
+    scene.add_point(Point(-0.5f,0.5f,1));
+    scene.add_point(Point(0.5f,0.5f,1));
+    scene.add_point(Point(-0.5,-0.5f,1));
+    scene.add_point(Point(0.5f,-0.5f,1));
 
     scene.add_segment(Point(-0.5f,-0.5f,0), Point(0.5f,-0.5f,0), CGAL::Color(0, 0, 255));
     scene.add_segment(Point(-0.5f,-0.5f,0), Point(-0.5f,0.5f,0), CGAL::Color(0, 0, 255));

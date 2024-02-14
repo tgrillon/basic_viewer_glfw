@@ -89,7 +89,11 @@ namespace OpenGL{
     m_size_rays(2.),
     m_size_lines(2.),
 
-    m_faces_mono_color(1.f,0,0,1.0f),
+    m_faces_mono_color(1.f, 0.0f, 0.0f, 1.0f),
+    m_vertices_mono_color(0.7f, 0.3f, 0.3f, 1.0f),
+    m_edges_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
+    m_rays_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
+    m_lines_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
 
     m_light_position(0, 0, 0, 0),
     m_ambient(0.6f, 0.5f, 0.5f, 1.f),
@@ -97,14 +101,13 @@ namespace OpenGL{
     m_diffuse(0.9f, 0.9f, 0.9f, 1.0f),
     m_specular(0.0f, 0.0f, 0.0f, 1.0f),
 
-    point_plane(0, 100, 0, 0),
-    clip_plane(0, 1, 0, 0),
+    point_plane(0, 0, 0, 0),
+    clip_plane(0, 0, 0, 0),
 
     cam_rotation(1.0f),
 
     m_are_buffers_initialized(false),
-    m_is_opengl_4_3(false),
-    rendering_mode(DRAW_ALL)
+    m_is_opengl_4_3(false)
     {
       init_keys_actions();
       cam_position = glm::translate(glm::mat4(1.0f), glm::vec3(0));
@@ -120,30 +123,29 @@ namespace OpenGL{
 
     void Basic_Viewer::show()
     {
-    m_window = initialise(m_title);
+      m_window = initialise(m_title);
 
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetKeyCallback(m_window, aggregate_inputs);
+      glfwSetWindowUserPointer(m_window, this);
+      glfwSetKeyCallback(m_window, aggregate_inputs);
 
-    GLint major, minor;
-    glGetIntegerv(GL_MAJOR_VERSION, &major);
-    glGetIntegerv(GL_MINOR_VERSION, &minor);
+      GLint major, minor;
+      glGetIntegerv(GL_MAJOR_VERSION, &major);
+      glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-    if (major > 4 || major == 4 && minor >= 3){
-      m_is_opengl_4_3 = true;
-    }
+      if (major > 4 || major == 4 && minor >= 3){
+        m_is_opengl_4_3 = true;
+      }
 
+      compileShaders();
 
-    compileShaders();
-
-    float test = 0;
+      float test = 0;
       while (!glfwWindowShouldClose(m_window))
       {
-          test += 0.7;
+        test += 0.7;
         // Process inputs
 
         // Rendering
-        glClearColor(0.f, 0.f, 0.f, 1.f);
+        glClearColor(1.0f,1.0f,1.0f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         renderScene(test);
 
@@ -159,10 +161,13 @@ namespace OpenGL{
     const char* face_frag = m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
     const char* pl_vert = m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
     const char* pl_frag = m_is_opengl_4_3 ? fragment_source_p_l : fragment_source_p_l_comp;
+    const char* plane_vert = vertex_source_clipping_plane;
+    const char* plane_frag = fragment_source_clipping_plane;
+
 
     face_shader = Shader::loadShader(face_vert, face_frag, "FACE");
     pl_shader = Shader::loadShader(pl_vert, pl_frag, "PL");
-    render_plane_shader = Shader::loadShader(vertex_source_clipping_plane, fragment_source_clipping_plane, "PLANE");
+    plane_shader = Shader::loadShader(plane_vert, plane_frag, "PLANE");
   }
 
   void Basic_Viewer::loadBuffer(int i, int location, int gsEnum, int dataCount){ 
@@ -246,8 +251,17 @@ namespace OpenGL{
     loadBuffer(bufn++, 2, Graphics_scene::COLOR_FACES, 3);
 
     // 6) clipping plane shader
-    glBindVertexArray(VAO_CLIPPING_PLANE);
-    // TODO
+    if (m_is_opengl_4_3) {
+      generate_clipping_plane();
+      glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
+      glBindBuffer(GL_ARRAY_BUFFER, buffers[bufn++]);
+      glBufferData(GL_ARRAY_BUFFER,
+                    m_array_for_clipping_plane.size()*sizeof(float),
+                    m_array_for_clipping_plane.data(), GL_STATIC_DRAW);
+
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+      glEnableVertexAttribArray(0);
+    }
 
     m_are_buffers_initialized = true;
   }
@@ -279,13 +293,17 @@ namespace OpenGL{
 
     face_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
     face_shader.setMatrix4f("mv_matrix", glm::value_ptr(modelView));
-    face_shader.setFloat("point_size", m_size_points);
+    // face_shader.setFloat("point_size", m_size_points);
     
     face_shader.setVec4f("light_pos", glm::value_ptr(m_light_position));
     face_shader.setVec4f("light_diff", glm::value_ptr(m_diffuse));
     face_shader.setVec4f("light_spec", glm::value_ptr(m_specular));
     face_shader.setVec4f("light_amb", glm::value_ptr(m_ambient));
-    face_shader.setFloat("spec_power", m_shininess);
+    face_shader.setFloat("spec_power", m_shininess);    
+  }
+
+  void Basic_Viewer::setFaceUniforms(RenderMode rendering_mode) {
+    face_shader.use();
 
     face_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
     face_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
@@ -297,15 +315,23 @@ namespace OpenGL{
     pl_shader.use();
     
     pl_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
+  }
+
+  void Basic_Viewer::setPLUniforms(RenderMode rendering_mode, bool set_point_size) {
+    pl_shader.use();
+    
     pl_shader.setFloat("point_size", m_size_points);
     pl_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
     pl_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
     pl_shader.setFloat("rendering_mode", rendering_mode);
-    
   }
 
   void Basic_Viewer::setClippingUniforms() {
-    
+    glm::mat4 clipping_mMatrix(1);
+    plane_shader.use();
+
+    plane_shader.setMatrix4f("vp_matrix", glm::value_ptr(modelViewProjection));
+    plane_shader.setMatrix4f("m_matrix", glm::value_ptr(clipping_mMatrix));
   }
   
   void Basic_Viewer::renderScene(float time)
@@ -318,10 +344,66 @@ namespace OpenGL{
     
     updateUniforms();
 
-    if (m_draw_edges)     { draw_edges(); }
-    if (m_draw_faces)     { draw_faces(); }
+    if (m_draw_vertices)  { 
+      if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) { 
+        setPLUniforms(DRAW_INSIDE_ONLY, true); 
+      } else { 
+        setPLUniforms(DRAW_ALL, true); 
+      }
+      draw_vertices(); 
+    }
+    if (m_draw_edges) {
+       if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) { 
+        setPLUniforms(DRAW_INSIDE_ONLY); 
+      } else { 
+        setPLUniforms(DRAW_ALL); 
+      }
+      draw_edges(); 
+    }
+    if (m_draw_faces) { 
+      if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF) {
+        // The z-buffer will prevent transparent objects from being displayed behind other transparent objects.
+        // Before rendering all transparent objects, disable z-testing first.
+
+        // 1. draw solid first
+        setFaceUniforms(DRAW_INSIDE_ONLY);
+        draw_faces();
+
+        // 2. draw transparent layer second with back face culling to avoid messy triangles
+        glDepthMask(false); //disable z-testing
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CW);
+        setFaceUniforms(DRAW_OUTSIDE_ONLY);
+        draw_faces();
+
+        // 3. draw solid again without culling and blend to make sure the solid mesh is visible
+        glDepthMask(true); //enable z-testing
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+        setFaceUniforms(DRAW_INSIDE_ONLY);
+        draw_faces();
+
+        // 4. render clipping plane here
+        render_clipping_plane();
+      } else if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_WIRE_HALF ||
+               m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) 
+      {
+        // 1. draw solid HALF
+        setFaceUniforms(DRAW_INSIDE_ONLY);
+        draw_faces();
+
+        // 2. render clipping plane here
+        render_clipping_plane();
+      } else {
+        // 1. draw solid FOR ALL
+        setFaceUniforms(DRAW_ALL);
+        draw_faces(); 
+      }
+    }
     if (m_draw_rays)      { draw_rays(); } 
-    if (m_draw_vertices)  { draw_vertices(); }
     if (m_draw_lines)     { draw_lines(); }
   }
 
@@ -341,7 +423,7 @@ namespace OpenGL{
     pl_shader.use();
     
     glBindVertexArray(m_vao[VAO_MONO_RAYS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(m_rays_mono_color));
 
     glLineWidth(m_size_rays);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_RAYS));
@@ -354,7 +436,7 @@ namespace OpenGL{
     pl_shader.use();
 
     glBindVertexArray(m_vao[VAO_MONO_POINTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(m_vertices_mono_color));
     glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_POINTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_POINTS]);
@@ -366,7 +448,7 @@ namespace OpenGL{
     pl_shader.use();
     
     glBindVertexArray(m_vao[VAO_MONO_LINES]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(m_lines_mono_color));
     glLineWidth(m_size_lines);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_LINES));
   
@@ -378,13 +460,52 @@ namespace OpenGL{
     pl_shader.use();
           
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_faces_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(m_edges_mono_color));
     glLineWidth(m_size_edges);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
     
+  }
+
+  void Basic_Viewer::generate_clipping_plane() {
+      size_t size=((m_scene.bounding_box().xmax()-m_scene.bounding_box().xmin()) +
+                (m_scene.bounding_box().ymax()-m_scene.bounding_box().ymin()) +
+                (m_scene.bounding_box().zmax()-m_scene.bounding_box().zmin()));
+      
+      const unsigned int nbSubdivisions=30;
+
+      auto& array = m_array_for_clipping_plane;
+      array.clear();
+      for (unsigned int i=0; i<=nbSubdivisions; ++i)
+      {
+        const float pos = float(size*(2.0*i/nbSubdivisions-1.0));
+        array.push_back(pos);
+        array.push_back(float(-size));
+        array.push_back(0.f);
+
+        array.push_back(pos);
+        array.push_back(float(+size));
+        array.push_back(0.f);
+
+        array.push_back(float(-size));
+        array.push_back(pos);
+        array.push_back(0.f);
+
+        array.push_back(float(size));
+        array.push_back(pos);
+        array.push_back(0.f);
+      }
+    }
+
+  void Basic_Viewer::render_clipping_plane() {
+    if (!m_is_opengl_4_3) return;
+      if (!m_clipping_plane_rendering) return;
+      plane_shader.use();
+      glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
+      glLineWidth(0.1f);
+      glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
   }
 
   void Basic_Viewer::aggregate_inputs(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -420,7 +541,7 @@ namespace OpenGL{
   // }
 
   void Basic_Viewer::handle_actions(ActionEnum action){
-    const float delta = 1.0f/5000;
+    const float delta = 50.0f/5000;
 
     switch (action){
       case UP:
@@ -441,21 +562,32 @@ namespace OpenGL{
       case BACKWARDS:
         cam_position = glm::translate(cam_position, glm::vec3(0, 0, -delta));
         break;
+      case CLIPPLANE:
+        m_use_clipping_plane = (m_use_clipping_plane + 1) % CLIPPING_PLANE_END_INDEX;
+        break;
     }
   }
 
   void Basic_Viewer::init_keys_actions() {
-    add_action(GLFW_KEY_UP, true, UP);
-    add_action(GLFW_KEY_DOWN, true, DOWN);
-    add_action(GLFW_KEY_LEFT, true, LEFT);
-    add_action(GLFW_KEY_RIGHT, true, RIGHT);
+    // add_action(GLFW_KEY_UP, true, UP);
+    // add_action(GLFW_KEY_DOWN, true, DOWN);
+    // add_action(GLFW_KEY_LEFT, true, LEFT);
+    // add_action(GLFW_KEY_RIGHT, true, RIGHT);
 
-    add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
-    add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
+    // add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
+    // add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
 
+    add_action(GLFW_KEY_Q, true, UP);
+    add_action(GLFW_KEY_E, true, DOWN);
+    add_action(GLFW_KEY_A, true, LEFT);
+    add_action(GLFW_KEY_D, true, RIGHT);
+
+    add_action(GLFW_KEY_W, true, FORWARD);
+    add_action(GLFW_KEY_S, true, BACKWARDS);
+
+    add_action(GLFW_KEY_C, true, CLIPPLANE);
   }
   
-
   // Blocking call
   inline void draw_graphics_scene(const Graphics_scene &graphics_scene, const char *title)
   {

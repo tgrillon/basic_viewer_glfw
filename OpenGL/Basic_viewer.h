@@ -14,7 +14,7 @@
 namespace CGAL {
 namespace OpenGL{
   enum RenderMode{ // rendering mode
-        DRAW_ALL = -1, // draw all
+        DRAW_ALL=-1, // draw all
         DRAW_INSIDE_ONLY, // draw only the part inside the clipping plane
         DRAW_OUTSIDE_ONLY // draw only the part outside the clipping plane
       };
@@ -47,9 +47,13 @@ namespace OpenGL{
     void initialiseBuffers();
 
     void updateUniforms();
+
     void setFaceUniforms();
     void setPLUniforms();
     void setClippingUniforms();
+
+    void setFaceUniforms(RenderMode rendering_mode);
+    void setPLUniforms(RenderMode rendering_mode, bool set_point_size=false);
 
     void renderScene(float time);
     void draw_faces();
@@ -57,6 +61,9 @@ namespace OpenGL{
     void draw_vertices();
     void draw_edges();
     void draw_lines();
+
+    void generate_clipping_plane();
+    void render_clipping_plane();
 
     void init_keys_actions();
     void handle_actions(ActionEnum action) override;
@@ -76,7 +83,13 @@ namespace OpenGL{
     float m_size_edges;
     float m_size_rays;
     float m_size_lines;
+    
     glm::vec4 m_faces_mono_color;
+    glm::vec4 m_vertices_mono_color;
+    glm::vec4 m_edges_mono_color;
+    glm::vec4 m_rays_mono_color;
+    glm::vec4 m_lines_mono_color;
+
     glm::vec4 clip_plane;
     glm::vec4 point_plane;
     glm::vec4 m_light_position;
@@ -85,13 +98,27 @@ namespace OpenGL{
     glm::mat4 modelView;
     glm::mat4 modelViewProjection;
     float m_rendering_transparency;
-    RenderMode rendering_mode;
     bool m_is_opengl_4_3;
 
-    Shader pl_shader, face_shader, render_plane_shader;
+    Shader pl_shader, face_shader, plane_shader;
     
     glm::mat4 cam_position, cam_rotation;
 
+
+    enum { // clipping mode
+        CLIPPING_PLANE_OFF=0,
+        CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF,
+        CLIPPING_PLANE_SOLID_HALF_WIRE_HALF,
+        CLIPPING_PLANE_SOLID_HALF_ONLY,
+        CLIPPING_PLANE_END_INDEX
+      };
+
+    int m_use_clipping_plane=CLIPPING_PLANE_SOLID_HALF_WIRE_HALF;
+    std::vector<float> m_array_for_clipping_plane;
+
+    // variables for clipping plane
+    bool m_clipping_plane_rendering = true; // will be toggled when alt+c is pressed, which is used for indicating whether or not to render the clipping plane ;
+    float m_clipping_plane_rendering_transparency = 0.5f; // to what extent the transparent part should be rendered;
     
     enum
     { VAO_MONO_POINTS=0,
@@ -109,7 +136,7 @@ namespace OpenGL{
     };
 
     enum Actions {
-      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS
+      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, CLIPPLANE
     };
     GLuint m_vao[NB_VAO_BUFFERS];
 
