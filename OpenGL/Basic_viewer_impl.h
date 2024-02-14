@@ -19,7 +19,7 @@ namespace OpenGL{
 
     // OpenGL 2.1 with compatibilty
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
     glfwSetErrorCallback(glfwErrorCallback);
@@ -84,7 +84,7 @@ namespace OpenGL{
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     
-    m_size_points(2.),
+    m_size_points(4.),
     m_size_edges(4.),
     m_size_rays(2.),
     m_size_lines(2.),
@@ -107,7 +107,7 @@ namespace OpenGL{
     cam_rotation(1.0f),
 
     m_are_buffers_initialized(false),
-    m_is_opengl_4_3(false)
+    m_is_opengl_4_3(true)
     {
       init_keys_actions();
       cam_position = glm::translate(glm::mat4(1.0f), glm::vec3(0));
@@ -569,21 +569,13 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::init_keys_actions() {
-    // add_action(GLFW_KEY_UP, true, UP);
-    // add_action(GLFW_KEY_DOWN, true, DOWN);
-    // add_action(GLFW_KEY_LEFT, true, LEFT);
-    // add_action(GLFW_KEY_RIGHT, true, RIGHT);
+    add_action(GLFW_KEY_UP, true, UP);
+    add_action(GLFW_KEY_DOWN, true, DOWN);
+    add_action(GLFW_KEY_LEFT, true, LEFT);
+    add_action(GLFW_KEY_RIGHT, true, RIGHT);
 
-    // add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
-    // add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
-
-    add_action(GLFW_KEY_Q, true, UP);
-    add_action(GLFW_KEY_E, true, DOWN);
-    add_action(GLFW_KEY_A, true, LEFT);
-    add_action(GLFW_KEY_D, true, RIGHT);
-
-    add_action(GLFW_KEY_W, true, FORWARD);
-    add_action(GLFW_KEY_S, true, BACKWARDS);
+    add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
+    add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
 
     add_action(GLFW_KEY_C, true, CLIPPLANE);
   }
