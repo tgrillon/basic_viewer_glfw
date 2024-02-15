@@ -1,5 +1,4 @@
 #include "Basic_viewer.h"
-
 namespace CGAL {
 namespace OpenGL{
 
@@ -100,43 +99,44 @@ namespace OpenGL{
     point_plane(0, 100, 0, 0),
     clip_plane(0, 1, 0, 0),
 
-    cam_rotation(1.0f),
+    cam_speed(0.2f),
+    cam_rot_speed(0.05f),
 
     m_are_buffers_initialized(false),
     m_is_opengl_4_3(false),
     rendering_mode(DRAW_ALL)
     {
       init_keys_actions();
-      cam_position = glm::translate(glm::mat4(1.0f), glm::vec3(0));
+      cam_position = glm::vec3(0,0,-5);
+      cam_forward = glm::vec3(0,0,1);
 
-      // modelView = glm::translate(glm::mat4(1.f), glm::vec3(1,0,0));
       modelView = glm::lookAt(glm::vec3(0.0f,0.0f,10.0f), glm::vec3(0.0f,0.0f,-1.0f), glm::vec3(0.0f,1.0f,0.0f));
-  
-      modelViewProjection = 
-        glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f)
-        *
-        modelView;
+      cam_perspective = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+
+      modelViewProjection = cam_perspective * modelView;
     }
 
     void Basic_Viewer::show()
     {
-    m_window = initialise(m_title);
+      m_window = initialise(m_title);
 
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetKeyCallback(m_window, aggregate_inputs);
+      glfwSetWindowUserPointer(m_window, this);
+      glfwSetKeyCallback(m_window, key_callback);
+      glfwSetCursorPosCallback(m_window, cursor_callback);
+      glfwSetMouseButtonCallback(m_window, mouse_btn_callback);
 
-    GLint major, minor;
-    glGetIntegerv(GL_MAJOR_VERSION, &major);
-    glGetIntegerv(GL_MINOR_VERSION, &minor);
+      GLint major, minor;
+      glGetIntegerv(GL_MAJOR_VERSION, &major);
+      glGetIntegerv(GL_MINOR_VERSION, &minor);
 
-    if (major > 4 || major == 4 && minor >= 3){
-      m_is_opengl_4_3 = true;
-    }
+      if (major > 4 || major == 4 && minor >= 3){
+        m_is_opengl_4_3 = true;
+      }
 
 
-    compileShaders();
+      compileShaders();
 
-    float test = 0;
+      float test = 0;
       while (!glfwWindowShouldClose(m_window))
       {
           test += 0.7;
@@ -253,19 +253,14 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::updateUniforms(){
-
-    // vertex uniforms
-    glm::mat4 view = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-    float radius = 10.0f;
-
-    float camX = static_cast<float>(sin(glfwGetTime()) * radius);
-    float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
-
-    view = cam_position * cam_rotation;
     glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
 
-    modelViewProjection = projection * view;
-    modelView = view;
+    modelView = cam_rotation_mode == WALK ?
+      glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0))
+      :
+      glm::lookAt(cam_position, cam_look_center, glm::vec3(0,1,0));
+
+    modelViewProjection = projection * modelView;
 
     // ================================================================
 
@@ -387,49 +382,194 @@ namespace OpenGL{
     
   }
 
-  void Basic_Viewer::aggregate_inputs(GLFWwindow* window, int key, int scancode, int action, int mods)
+  void Basic_Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
   {
     Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
-
     viewer->on_key_event(key, scancode, action, mods);
   }
 
-  void Basic_Viewer::handle_actions(ActionEnum action){
-    const float delta = 1.0f/60;
+  
+  void Basic_Viewer::cursor_callback(GLFWwindow* window, double xpos, double ypo)
+  {
+    Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+    viewer->on_cursor_event(xpos, ypo);
+  }
 
+  
+  void Basic_Viewer::mouse_btn_callback(GLFWwindow* window, int button, int action, int mods)
+  {
+    Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+    viewer->on_mouse_btn_event(button, action, mods);
+  }
+
+  void Basic_Viewer::start_action(ActionEnum action){
+    switch (action) {
+      case MOUSE_ROTATE:
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        mouse_old = get_cursor();
+        break;
+
+    }
+  }
+
+  void Basic_Viewer::action(ActionEnum action){
     switch (action){
       case UP:
-        cam_position = glm::translate(cam_position, glm::vec3(0, -delta, 0));
+        translate(glm::vec3(0, cam_speed, 0));
         break;
       case DOWN:
-        cam_position = glm::translate(cam_position, glm::vec3(0, delta, 0));
+        translate(glm::vec3(0, -cam_speed, 0));
         break;
       case LEFT:
-        cam_position = glm::translate(cam_position, glm::vec3(delta, 0, 0));
+        translate(glm::vec3(cam_speed, 0, 0));
         break;
       case RIGHT:
-        cam_position = glm::translate(cam_position, glm::vec3(-delta, 0, 0));
+        translate(glm::vec3(-cam_speed, 0, 0));
         break;
       case FORWARD:
-        cam_position = glm::translate(cam_position, glm::vec3(0, 0, delta));
+        translate(glm::vec3(0, 0, cam_speed));
         break;
       case BACKWARDS:
-        cam_position = glm::translate(cam_position, glm::vec3(0, 0, -delta));
+        translate(glm::vec3(0, 0, -cam_speed));
+        break;
+      case MOUSE_ROTATE: 
+        mouse_rotate();
+        break;
+      case SWITCH_CAM_MODE:
+        switch_cam_mode();
+        break;
+      case SWITCH_CAM_ROTATION:
+        switch_rotation_mode();
+        break;
+      case INC_MOVE_SPEED_D1:
+        cam_speed += 0.1f;
+        break;
+      case DEC_MOVE_SPEED_D1:
+        cam_speed -= 0.1f;
+        break;
+      case INC_MOVE_SPEED_1:
+        cam_speed++;
+        break;
+      case DEC_MOVE_SPEED_1:
+        cam_speed--;
+        break;
+      case INC_ROT_SPEED_D1:
+        cam_rot_speed += 0.1f;
+        break;
+      case DEC_ROT_SPEED_D1:
+        cam_rot_speed -= 0.1f;
+        break;
+      case INC_ROT_SPEED_1:
+        cam_rot_speed++;
+        break;
+      case DEC_ROT_SPEED_1:
+        cam_rot_speed--;
+        break;
+    }
+  }
+
+  void Basic_Viewer::end_action(ActionEnum action){
+    switch (action) {
+      case MOUSE_ROTATE:
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         break;
     }
   }
 
   void Basic_Viewer::init_keys_actions() {
+    add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
+    add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
+
     add_action(GLFW_KEY_UP, true, UP);
     add_action(GLFW_KEY_DOWN, true, DOWN);
     add_action(GLFW_KEY_LEFT, true, LEFT);
     add_action(GLFW_KEY_RIGHT, true, RIGHT);
 
-    add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
-    add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
+    add_action(GLFW_KEY_C, false, SWITCH_CAM_MODE);
+    add_action(GLFW_KEY_V, false, SWITCH_CAM_ROTATION);
 
+    add_action(GLFW_KEY_S, false, INC_MOVE_SPEED_1);
+    add_action(GLFW_KEY_S, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
+    add_action(GLFW_KEY_S, GLFW_KEY_LEFT_SHIFT, false, DEC_MOVE_SPEED_1);
+    add_action(GLFW_KEY_S, GLFW_KEY_LEFT_SHIFT, GLFW_KEY_LEFT_CONTROL, false, DEC_MOVE_SPEED_D1);
+
+    add_action(GLFW_KEY_R, false, INC_ROT_SPEED_1);
+    add_action(GLFW_KEY_R, GLFW_KEY_LEFT_CONTROL, false, INC_ROT_SPEED_D1);
+    add_action(GLFW_KEY_R, GLFW_KEY_LEFT_SHIFT, false, DEC_ROT_SPEED_1);
+    add_action(GLFW_KEY_R, GLFW_KEY_LEFT_SHIFT, GLFW_KEY_LEFT_CONTROL, false, DEC_ROT_SPEED_D1);
+
+
+    add_mouse_action(GLFW_MOUSE_BUTTON_1, true, MOUSE_ROTATE);
   }
-  
+
+  void Basic_Viewer::translate(glm::vec3 dir){
+    const float delta = 1.0f/60;
+    glm::vec3 right = glm::normalize(glm::cross(glm::vec3{0, 1, 0}, cam_forward)); 
+    glm::vec3 up = glm::cross(cam_forward, right);
+
+    glm::vec3 result = 
+      dir.x * right * delta +
+      dir.y * up * delta +
+      dir.z * cam_forward * delta;
+
+    cam_position += result;
+    cam_look_center += result;
+  }
+
+  void Basic_Viewer::mouse_rotate(){
+    glm::vec2 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y
+    };
+
+    mouse_old = get_cursor();
+    
+    cam_view += cursor_delta * cam_rot_speed;
+
+    std::cout << cam_view.x << " " << cam_view.y << std::endl;
+
+    glm::vec3 dir =  {
+      cos(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y)),
+      sin(glm::radians(cam_view.y)),
+      sin(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y))
+    };
+
+
+    if (cam_rotation_mode == WALK){
+      dir.y = -dir.y;
+      cam_forward = dir;
+      return;
+    }
+
+    // cam_rotation_mode == CENTER
+    glm::vec3 camToCenter = cam_look_center - cam_position;
+    cam_forward = normalize(camToCenter);
+    cam_position = cam_look_center + dir * length(camToCenter);
+  }
+
+  void Basic_Viewer::switch_cam_mode() {
+    if (cam_mode == PERSPECTIVE){
+      //cam_perspective = glm::ortho();
+      return;
+    }
+
+    cam_perspective = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+  }
+
+  void Basic_Viewer::switch_rotation_mode() {
+    if (cam_rotation_mode == CENTER){
+      cam_rotation_mode = WALK;
+      cam_view.x += 180;
+
+      return;
+    }
+
+    cam_view.x -= 180;
+    
+    glm::vec3 camToCenter = glm::normalize(cam_look_center - cam_position);
+    cam_forward = camToCenter;
+    cam_rotation_mode = cam_rotation_mode == WALK ? CENTER : WALK;
+  }
 
   // Blocking call
   inline void draw_graphics_scene(const Graphics_scene &graphics_scene, const char *title)
