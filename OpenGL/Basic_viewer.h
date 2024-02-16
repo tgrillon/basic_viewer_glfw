@@ -35,6 +35,8 @@ namespace OpenGL{
                     bool draw_vertices = true,
                     bool draw_edges = true,
                     bool draw_faces = true,
+                    bool use_mono_color=false,
+                    bool inverse_normal=false,
                     bool draw_rays = true,
                     bool draw_text = true,
                     bool draw_lines = true);
@@ -90,6 +92,10 @@ namespace OpenGL{
     bool m_draw_faces;
     bool m_draw_text;
     bool m_are_buffers_initialized;
+    bool m_flat_shading;
+    bool m_use_mono_color;
+    bool m_inverse_normal;
+
     float m_size_points;
     float m_size_edges;
     float m_size_rays;
@@ -143,12 +149,34 @@ namespace OpenGL{
     CAM_MODE cam_mode = PERSPECTIVE;
     CAM_ROTATION_MODE cam_rotation_mode = CENTER;
 
+    float m_clipping_plane_angle_rot = 0.0f;
+    float m_clipping_plane_angle_step = 2.0f;
+    
+    int m_clipping_plane_rotation_axis = X_CP_AXIS;
+
+    enum {
+      X_CP_AXIS=0, 
+      Y_CP_AXIS, 
+      XY_CP_AXIS,
+    };
+
     enum Actions {
+      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, MOUSE_ROTATE,
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
       INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
       DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
       INC_ROT_SPEED_D1, INC_ROT_SPEED_1,
       DEC_ROT_SPEED_D1, DEC_ROT_SPEED_1,
+      
+      CLIPPING_PLANE_MODE, CLIPPING_PLANE_DISPLAY,
+      VERTICES_DISPLAY, FACES_DISPLAY, EDGES_DISPLAY, TEXT_DISPLAY,
+      INVERSE_NORMAL, SHADING_MODE, MONO_COLOR,
+      INC_LIGHT_ALL, INC_LIGHT_R, INC_LIGHT_G, INC_LIGHT_B,
+      DEC_LIGHT_ALL, DEC_LIGHT_R, DEC_LIGHT_G, DEC_LIGHT_B,
+      INC_POINTS_SIZE, DEC_POINTS_SIZE,
+      INC_EDGES_SIZE, DEC_EDGES_SIZE,
+      CP_NEGATIVE_ROTATION, CP_POSITIVE_ROTATION, CP_ROTATION_AXIS,
+      INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP 
     };
     
     /*********************/
