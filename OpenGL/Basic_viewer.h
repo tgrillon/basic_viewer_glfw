@@ -38,7 +38,10 @@ namespace OpenGL{
                     bool draw_rays = true,
                     bool draw_text = true,
                     bool draw_lines = true);
-    static void aggregate_inputs(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void cursor_callback(GLFWwindow* window, double xpos, double ypo);
+    static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
+    
     void show();
     
   private:
@@ -66,7 +69,15 @@ namespace OpenGL{
     void render_clipping_plane();
 
     void init_keys_actions();
-    void handle_actions(ActionEnum action) override;
+
+    void start_action(ActionEnum action) override;
+    void action(ActionEnum action) override;
+    void end_action(ActionEnum action) override;
+    
+    void translate(const glm::vec3 dir);
+    void mouse_rotate();
+    void switch_cam_mode();
+    void switch_rotation_mode();
     
   private:
     GLFWwindow *m_window;
@@ -101,9 +112,7 @@ namespace OpenGL{
 
     Shader pl_shader, face_shader, plane_shader;
     
-    glm::mat4 cam_position, cam_rotation;
-
-
+    // CLIPPING PLANE 
     enum { // clipping mode
         CLIPPING_PLANE_OFF=0,
         CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF,
@@ -115,11 +124,36 @@ namespace OpenGL{
     int m_use_clipping_plane=CLIPPING_PLANE_OFF;
     std::vector<float> m_array_for_clipping_plane;
 
-    // variables for clipping plane
     bool m_clipping_plane_rendering = true; // will be toggled when alt+c is pressed, which is used for indicating whether or not to render the clipping plane ;
     float m_clipping_plane_rendering_transparency = 0.5f; // to what extent the transparent part should be rendered;
     
-    enum
+    /******* CAMERA ******/  
+    Cursor mouse_old;
+    
+    float cam_speed, cam_rot_speed;
+
+    glm::mat4 cam_perspective;
+    glm::vec3 cam_position;
+    glm::vec2 cam_view = {0, 0};
+    glm::vec3 cam_forward = {}, cam_look_center = {};
+
+    enum CAM_MODE { PERSPECTIVE, ORTHOGONAL };
+    enum CAM_ROTATION_MODE { CENTER, WALK };
+
+    CAM_MODE cam_mode = PERSPECTIVE;
+    CAM_ROTATION_MODE cam_rotation_mode = CENTER;
+
+    enum Actions {
+      SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
+      INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
+      DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
+      INC_ROT_SPEED_D1, INC_ROT_SPEED_1,
+      DEC_ROT_SPEED_D1, DEC_ROT_SPEED_1,
+    };
+    
+    /*********************/
+
+    enum VAO_TYPES
     { VAO_MONO_POINTS=0,
       VAO_COLORED_POINTS,
       VAO_MONO_SEGMENTS,
@@ -134,9 +168,6 @@ namespace OpenGL{
       NB_VAO_BUFFERS
     };
 
-    enum Actions {
-      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, CLIPPLANE
-    };
     GLuint m_vao[NB_VAO_BUFFERS];
 
     static const unsigned int NB_GL_BUFFERS=(Graphics_scene::END_POS-Graphics_scene::BEGIN_POS)+
