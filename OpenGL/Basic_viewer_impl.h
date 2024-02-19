@@ -674,7 +674,7 @@ namespace OpenGL{
           m_size_edges++;
         break;
       case DEC_EDGES_SIZE:
-        if (m_size_edges>0)
+        if (m_size_edges>1)
           m_size_edges--; 
         break;
       case INC_POINTS_SIZE: 
@@ -682,7 +682,7 @@ namespace OpenGL{
           m_size_points++;
         break;
       case DEC_POINTS_SIZE:
-        if (m_size_points>5)
+        if (m_size_points>1)
           m_size_points--; 
         break;
       case INC_LIGHT_ALL:
