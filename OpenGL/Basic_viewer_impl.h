@@ -120,7 +120,6 @@ namespace OpenGL{
       glfwSetMouseButtonCallback(m_window, mouse_btn_callback);
       glfwSetFramebufferSizeCallback(m_window, window_size_callback);
 
-      set_window_callbacks(m_window);
       set_cam_mode(cam_mode);
 
       GLint major, minor;
@@ -402,8 +401,9 @@ namespace OpenGL{
     Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
 
     viewer->window_size = {width, height};
-
     viewer->set_cam_mode(viewer->cam_mode);
+
+    glViewport(0, 0, width, height);
   }
 
   void Basic_Viewer::start_action(ActionEnum action){
@@ -440,7 +440,7 @@ namespace OpenGL{
         mouse_rotate();
         break;
       case SWITCH_CAM_MODE:
-        set_cam_mode(cam_mode == PERSPECTIVE ? ORTHOGONAL : PERSPECTIVE);
+        set_cam_mode(cam_mode == PERSPECTIVE ? ORTHOGRAPHIC : PERSPECTIVE);
         break;
       case SWITCH_CAM_ROTATION:
         switch_rotation_mode();
@@ -448,6 +448,11 @@ namespace OpenGL{
       case FULLSCREEN:
         fullscreen();
         break;
+      case INC_ZOOM:
+        zoom(1.0f);
+        break;
+      case DEC_ZOOM:
+        zoom(-1.0f);
       case INC_MOVE_SPEED_D1:
         cam_speed += 0.1f;
         break;
@@ -496,6 +501,9 @@ namespace OpenGL{
     add_action(GLFW_KEY_V, false, SWITCH_CAM_ROTATION);
 
     add_action(GLFW_KEY_F, false, FULLSCREEN);
+
+    add_action(GLFW_KEY_Z, false, INC_ZOOM);
+    add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
 
     add_action(GLFW_KEY_S, false, INC_MOVE_SPEED_1);
     add_action(GLFW_KEY_S, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
@@ -555,12 +563,15 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
+    cam_mode = mode;
+
+    float ratio = (float)window_size.x/(float)window_size.y;
+
     if (cam_mode == PERSPECTIVE){
       cam_projection = glm::perspective(glm::radians(45.f), (float)window_size.x/(float)window_size.y, 0.1f, 1000.0f);
       return;
     }
-
-    //cam_perspective = glm::ortho();
+    cam_projection = glm::ortho(0.0f, cam_orth_zoom * ratio, 0.0f, cam_orth_zoom, 0.1f, 100.0f);
   }
 
   void Basic_Viewer::switch_rotation_mode() {
@@ -588,10 +599,6 @@ namespace OpenGL{
       GLFWmonitor* monitor = glfwGetMonitors(&count)[0];
       const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-      glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-      glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-      glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-
       glfwGetWindowPos(m_window, &old_window_pos.x, &old_window_pos.y); 
       glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
       glViewport(0, 0, mode->width, mode->height);
@@ -606,8 +613,11 @@ namespace OpenGL{
 
   }
 
-  void Basic_Viewer::set_window_callbacks(GLFWwindow* window){
-    
+  void Basic_Viewer::zoom(float z){
+    if (cam_mode == ORTHOGRAPHIC){
+      cam_orth_zoom += z;
+      set_cam_mode(ORTHOGRAPHIC);
+    }
   }
 
   // Blocking call

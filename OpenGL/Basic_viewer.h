@@ -19,7 +19,7 @@ namespace OpenGL{
         DRAW_OUTSIDE_ONLY // draw only the part outside the clipping plane
       };
   
-  enum CAM_MODE { PERSPECTIVE, ORTHOGONAL };
+  enum CAM_MODE { PERSPECTIVE, ORTHOGRAPHIC };
   enum CAM_ROTATION_MODE { CENTER, WALK };
 
   const int windowSamples = 4;
@@ -75,9 +75,9 @@ namespace OpenGL{
     void mouse_rotate();
     void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
+    void zoom(float z);
 
     void fullscreen();
-    void set_window_callbacks(GLFWwindow* window);
     
   private:
     GLFWwindow *m_window;
@@ -116,6 +116,7 @@ namespace OpenGL{
     glm::vec3 cam_position;
     glm::vec2 cam_view = {0, 0};
     glm::vec3 cam_forward = {}, cam_look_center = {};
+    float cam_orth_zoom = 1.0f;
 
     glm::ivec2 window_size {1024, 768};
     glm::ivec2 old_window_size;
@@ -144,6 +145,7 @@ namespace OpenGL{
       UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, MOUSE_ROTATE,
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
       FULLSCREEN,
+      INC_ZOOM, DEC_ZOOM,
       INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
       DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
       INC_ROT_SPEED_D1, INC_ROT_SPEED_1,
