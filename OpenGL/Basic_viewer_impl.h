@@ -2,12 +2,12 @@
 namespace CGAL {
 namespace OpenGL{
 
-  void glfwErrorCallback(int error, const char *description)
+  void Basic_Viewer::error_callback(int error, const char *description)
   {
     fprintf(stderr, "GLFW returned an error:\n\t%s (%i)\n", description, error);
   }
 
-  GLFWwindow* initialise(const char *title)
+  GLFWwindow* Basic_Viewer::create_window(int width, int height, const char *title)
   {
     // Initialise GLFW
     if (!glfwInit())
@@ -21,15 +21,15 @@ namespace OpenGL{
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
-    glfwSetErrorCallback(glfwErrorCallback);
+    glfwSetErrorCallback(error_callback);
 
     // Set additional window options
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, windowSamples); // MSAA
 
       // Create window using GLFW
-    GLFWwindow *window = glfwCreateWindow(windowWidth,
-                                          windowHeight,
+    GLFWwindow *window = glfwCreateWindow(width,
+                                          height,
                                           title,
                                           nullptr,
                                           nullptr);
@@ -45,7 +45,6 @@ namespace OpenGL{
 
     // Let the window be the current OpenGL context and initialise glad
     glfwMakeContextCurrent(window);
-    //glfwSetFramebufferSizeCallback(window, glViewport(0, 0, windowWidth, windowHeight));
     
     // Initialized GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -109,21 +108,20 @@ namespace OpenGL{
       init_keys_actions();
       cam_position = glm::vec3(0,0,-5);
       cam_forward = glm::vec3(0,0,1);
-
-      modelView = glm::lookAt(glm::vec3(0.0f,0.0f,10.0f), glm::vec3(0.0f,0.0f,-1.0f), glm::vec3(0.0f,1.0f,0.0f));
-      cam_perspective = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
-
-      modelViewProjection = cam_perspective * modelView;
     }
 
     void Basic_Viewer::show()
     {
-      m_window = initialise(m_title);
+      m_window = create_window(window_size.x, window_size.y, m_title);
 
       glfwSetWindowUserPointer(m_window, this);
       glfwSetKeyCallback(m_window, key_callback);
       glfwSetCursorPosCallback(m_window, cursor_callback);
       glfwSetMouseButtonCallback(m_window, mouse_btn_callback);
+      glfwSetFramebufferSizeCallback(m_window, window_size_callback);
+
+      set_window_callbacks(m_window);
+      set_cam_mode(cam_mode);
 
       GLint major, minor;
       glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -253,14 +251,12 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::updateUniforms(){
-    glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
-
     modelView = cam_rotation_mode == WALK ?
       glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0))
       :
       glm::lookAt(cam_position, cam_look_center, glm::vec3(0,1,0));
 
-    modelViewProjection = projection * modelView;
+    modelViewProjection = cam_projection * modelView;
 
     // ================================================================
 
@@ -402,6 +398,14 @@ namespace OpenGL{
     viewer->on_mouse_btn_event(button, action, mods);
   }
 
+  void Basic_Viewer::window_size_callback(GLFWwindow* window, int width, int height) {
+    Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+
+    viewer->window_size = {width, height};
+
+    viewer->set_cam_mode(viewer->cam_mode);
+  }
+
   void Basic_Viewer::start_action(ActionEnum action){
     switch (action) {
       case MOUSE_ROTATE:
@@ -436,10 +440,13 @@ namespace OpenGL{
         mouse_rotate();
         break;
       case SWITCH_CAM_MODE:
-        switch_cam_mode();
+        set_cam_mode(cam_mode == PERSPECTIVE ? ORTHOGONAL : PERSPECTIVE);
         break;
       case SWITCH_CAM_ROTATION:
         switch_rotation_mode();
+        break;
+      case FULLSCREEN:
+        fullscreen();
         break;
       case INC_MOVE_SPEED_D1:
         cam_speed += 0.1f;
@@ -488,6 +495,8 @@ namespace OpenGL{
     add_action(GLFW_KEY_C, false, SWITCH_CAM_MODE);
     add_action(GLFW_KEY_V, false, SWITCH_CAM_ROTATION);
 
+    add_action(GLFW_KEY_F, false, FULLSCREEN);
+
     add_action(GLFW_KEY_S, false, INC_MOVE_SPEED_1);
     add_action(GLFW_KEY_S, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
     add_action(GLFW_KEY_S, GLFW_KEY_LEFT_SHIFT, false, DEC_MOVE_SPEED_1);
@@ -526,8 +535,6 @@ namespace OpenGL{
     
     cam_view += cursor_delta * cam_rot_speed;
 
-    std::cout << cam_view.x << " " << cam_view.y << std::endl;
-
     glm::vec3 dir =  {
       cos(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y)),
       sin(glm::radians(cam_view.y)),
@@ -547,13 +554,13 @@ namespace OpenGL{
     cam_position = cam_look_center + dir * length(camToCenter);
   }
 
-  void Basic_Viewer::switch_cam_mode() {
+  void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
     if (cam_mode == PERSPECTIVE){
-      //cam_perspective = glm::ortho();
+      cam_projection = glm::perspective(glm::radians(45.f), (float)window_size.x/(float)window_size.y, 0.1f, 1000.0f);
       return;
     }
 
-    cam_perspective = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+    //cam_perspective = glm::ortho();
   }
 
   void Basic_Viewer::switch_rotation_mode() {
@@ -569,6 +576,38 @@ namespace OpenGL{
     glm::vec3 camToCenter = glm::normalize(cam_look_center - cam_position);
     cam_forward = camToCenter;
     cam_rotation_mode = cam_rotation_mode == WALK ? CENTER : WALK;
+  }
+
+  void Basic_Viewer::fullscreen(){
+    is_fullscreen = !is_fullscreen;
+
+    if (is_fullscreen) {
+      int count;
+      old_window_size = window_size;
+
+      GLFWmonitor* monitor = glfwGetMonitors(&count)[0];
+      const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+      glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+      glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+      glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+
+      glfwGetWindowPos(m_window, &old_window_pos.x, &old_window_pos.y); 
+      glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+      glViewport(0, 0, mode->width, mode->height);
+
+      std::cout << window_size.x << " " << window_size.y;
+      return;
+    }
+
+    window_size = old_window_size;
+    glfwSetWindowMonitor(m_window, nullptr, old_window_pos.x, old_window_pos.y, window_size.x, window_size.y, 60);
+    glViewport(0, 0, window_size.x, window_size.y);
+
+  }
+
+  void Basic_Viewer::set_window_callbacks(GLFWwindow* window){
+    
   }
 
   // Blocking call
