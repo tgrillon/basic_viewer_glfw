@@ -7,6 +7,10 @@ public:
     Shader(): program(0) {}
     Shader(int program): program(program) {}
 
+    void destroy() {
+        glDeleteProgram(program);
+    }
+
     void use(){
         glUseProgram(program);
     }

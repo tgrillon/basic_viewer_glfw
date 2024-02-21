@@ -587,6 +587,15 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::action_event(ActionEnum action){
+    if (action == EXIT) {
+      pl_shader.destroy();
+      face_shader.destroy(); 
+      plane_shader.destroy();
+      glfwDestroyWindow(m_window);
+      glfwTerminate();
+      exit(EXIT_SUCCESS);
+    }
+
     switch (action){
       case UP:
         translate(glm::vec3(0, cam_speed, 0));
@@ -795,6 +804,8 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::init_keys_actions() {
+    add_action(GLFW_KEY_ESCAPE, false, EXIT);
+
     add_action(GLFW_KEY_UP, GLFW_KEY_LEFT_SHIFT, true, FORWARD);
     add_action(GLFW_KEY_DOWN, GLFW_KEY_LEFT_SHIFT, true, BACKWARDS);
 
@@ -855,6 +866,8 @@ namespace OpenGL{
     add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
     
     /*===================== BIND DESCRIPTIONS ============================*/
+
+    set_action_description(EXIT, "Exits program");
 
     set_action_description(FORWARD, "Move forward");
     set_action_description(BACKWARDS, "Move backwards");

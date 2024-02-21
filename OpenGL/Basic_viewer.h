@@ -201,7 +201,9 @@ namespace OpenGL{
       CP_NEGATIVE_ROTATION, CP_POSITIVE_ROTATION, CP_ROTATION_AXIS,
       INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP, 
 
-      CP_ROTATION, CP_TRANSLATION
+      CP_ROTATION, CP_TRANSLATION,
+
+      EXIT
     };
     
     /*********************/
