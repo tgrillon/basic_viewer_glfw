@@ -73,11 +73,13 @@ namespace OpenGL{
     
     void translate(const glm::vec3 dir);
     void mouse_rotate();
+    void mouse_translate();
     void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
     void zoom(float z);
-
     void fullscreen();
+
+    void print_help();
     
   private:
     GLFWwindow *m_window;
@@ -142,7 +144,8 @@ namespace OpenGL{
     };
 
     enum Actions {
-      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, MOUSE_ROTATE,
+      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, 
+      MOUSE_ROTATE, MOUSE_TRANSLATE,
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
       FULLSCREEN,
       INC_ZOOM, DEC_ZOOM,
