@@ -244,9 +244,9 @@ void Input::handle_events(){
     std::unordered_map<int, bool>* key_map;
 
     if (k.mouse) 
-      key_map = k.hold ? &holding_keys : &pressed_keys;
-    else 
       key_map = k.hold ? &mouse_hold : &mouse_pressed;
+    else 
+      key_map = k.hold ? &holding_keys : &pressed_keys;
 
     if (!consumed_keys[k.key1] && (*key_map)[k.key1]
     && (k.key2 < 0 || holding_keys[k.key2])

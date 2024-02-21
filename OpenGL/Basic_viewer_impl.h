@@ -665,8 +665,12 @@ namespace OpenGL{
     auto print_action = [this](std::vector<KeyData> keys, ActionEnum action){
       std::string line;
 
-      line += "   " + get_action_description(action) ;
+      std::string action_str = get_action_description(action);
+
+      if (action_str.empty()) action_str = "No description found";
         
+      line += "   " + action_str;
+
       if (keys.size() > 1) {
         line += " (Alternatives : " + get_key_string(keys[1]);
 
