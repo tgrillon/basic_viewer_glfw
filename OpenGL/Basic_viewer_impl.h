@@ -803,18 +803,13 @@ namespace OpenGL{
     add_action(GLFW_KEY_LEFT, true, LEFT);
     add_action(GLFW_KEY_RIGHT, true, RIGHT);
 
-    add_action(GLFW_KEY_C, GLFW_KEY_LEFT_CONTROL, false, SWITCH_CAM_MODE);
+    add_action(GLFW_KEY_O, false, SWITCH_CAM_MODE);
     add_action(GLFW_KEY_V, GLFW_KEY_LEFT_CONTROL, false, SWITCH_CAM_ROTATION);
-
-    add_action(GLFW_KEY_F, false, FULLSCREEN);
 
     add_action(GLFW_KEY_Z, false, INC_ZOOM);
     add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
 
     add_action(GLFW_KEY_ENTER, GLFW_KEY_LEFT_ALT, false, FULLSCREEN);
-
-    add_action(GLFW_KEY_Z, false, INC_ZOOM);
-    add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
 
     add_action(GLFW_KEY_X, false, INC_MOVE_SPEED_1);
     add_action(GLFW_KEY_X, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
@@ -827,6 +822,7 @@ namespace OpenGL{
     add_action(GLFW_KEY_R, GLFW_KEY_LEFT_SHIFT, GLFW_KEY_LEFT_CONTROL, false, DEC_ROT_SPEED_D1);
 
     add_mouse_action(GLFW_MOUSE_BUTTON_1, true, MOUSE_ROTATE);
+    add_mouse_action(GLFW_MOUSE_BUTTON_2, true, MOUSE_TRANSLATE);
   
     add_action(GLFW_KEY_C, false, CLIPPING_PLANE_MODE);
     add_action(GLFW_KEY_C, GLFW_KEY_LEFT_ALT, false, CLIPPING_PLANE_DISPLAY); 
@@ -834,16 +830,16 @@ namespace OpenGL{
     add_action(GLFW_KEY_F, false, FACES_DISPLAY);
     add_action(GLFW_KEY_V, false, VERTICES_DISPLAY);
     add_action(GLFW_KEY_E, false, EDGES_DISPLAY);
-    add_action(GLFW_KEY_T, false, TEXT_DISPLAY);
+    // add_action(GLFW_KEY_T, false, TEXT_DISPLAY);
     
     add_action(GLFW_KEY_S, false, SHADING_MODE);
     add_action(GLFW_KEY_N, false, INVERSE_NORMAL);
     add_action(GLFW_KEY_M, false, MONO_COLOR);
 
-    add_action(GLFW_KEY_H, true, DEC_POINTS_SIZE);
-    add_action(GLFW_KEY_J, true, INC_POINTS_SIZE);
-    add_action(GLFW_KEY_H, GLFW_KEY_LEFT_CONTROL, true, DEC_EDGES_SIZE);
-    add_action(GLFW_KEY_J, GLFW_KEY_LEFT_CONTROL, true, INC_EDGES_SIZE);
+    add_action(GLFW_KEY_H, GLFW_KEY_LEFT_CONTROL, true, DEC_POINTS_SIZE);
+    add_action(GLFW_KEY_J, GLFW_KEY_LEFT_CONTROL, true, INC_POINTS_SIZE);
+    add_action(GLFW_KEY_H, true, DEC_EDGES_SIZE);
+    add_action(GLFW_KEY_J, true, INC_EDGES_SIZE);
   
     add_action(GLFW_KEY_PAGE_UP, true, INC_LIGHT_ALL);
     add_action(GLFW_KEY_PAGE_DOWN, true, DEC_LIGHT_ALL);
@@ -855,17 +851,10 @@ namespace OpenGL{
     add_action(GLFW_KEY_PAGE_UP, GLFW_KEY_LEFT_CONTROL, true, INC_LIGHT_B);
     add_action(GLFW_KEY_PAGE_DOWN, GLFW_KEY_LEFT_CONTROL, true, DEC_LIGHT_B);
 
-    add_action(GLFW_KEY_Y, true, CP_NEGATIVE_ROTATION);
-    add_action(GLFW_KEY_U, true, CP_POSITIVE_ROTATION);
-
-    add_action(GLFW_KEY_Y, GLFW_KEY_LEFT_CONTROL, true, DEC_CP_ROT_ANGLE_STEP);
-    add_action(GLFW_KEY_U, GLFW_KEY_LEFT_CONTROL, true, INC_CP_ROT_ANGLE_STEP);
-
-    add_action(GLFW_KEY_Q, GLFW_KEY_LEFT_CONTROL, false, CP_ROTATION_AXIS);
-
     add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_ROTATION);
-    add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
-    add_mouse_action(GLFW_MOUSE_BUTTON_2, true, MOUSE_TRANSLATE);
+    add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
+    
+    /*===================== BIND DESCRIPTIONS ============================*/
 
     set_action_description(FORWARD, "Move forward");
     set_action_description(BACKWARDS, "Move backwards");
@@ -882,6 +871,27 @@ namespace OpenGL{
     
     set_action_description(MOUSE_ROTATE, "Rotate the view");
     set_action_description(MOUSE_TRANSLATE, "Move the view");
+
+    set_action_description(CLIPPING_PLANE_MODE, "Switch clipping plane display mode");
+    set_action_description(CLIPPING_PLANE_DISPLAY, "Toggle clipping plane rendering on/off");
+    
+    set_action_description(INC_LIGHT_ALL, "Increase light (all colors, use shift/alt/ctrl for one rgb component)");
+    set_action_description(DEC_LIGHT_ALL, "Decrease light (all colors, use shift/alt/ctrl for one rgb component)");
+    
+    set_action_description(VERTICES_DISPLAY, "Toggles vertices display");
+    set_action_description(EDGES_DISPLAY, "Toggles edges display");
+    set_action_description(FACES_DISPLAY, "Toggles faces display");
+    
+    set_action_description(INC_POINTS_SIZE, "Increase size of vertices");
+    set_action_description(DEC_POINTS_SIZE, "Decrease size of vertices");
+    set_action_description(INC_EDGES_SIZE, "Increase size of edges");
+    set_action_description(DEC_EDGES_SIZE, "Decrease size of edges");
+    
+    set_action_description(MONO_COLOR, "Toggles mono color");
+    set_action_description(INVERSE_NORMAL, "Inverse direction of normals");
+    set_action_description(SHADING_MODE, "Switch between flat/Gouraud shading display");
+
+
 
   }
 
