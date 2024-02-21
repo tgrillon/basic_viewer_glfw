@@ -78,7 +78,7 @@ protected:
   void handle_events();
 
   virtual void start_action(ActionEnum action) = 0;
-  virtual void action(ActionEnum action) = 0;
+  virtual void action_event(ActionEnum action) = 0;
   virtual void end_action(ActionEnum action) = 0;
 private:
   void add_action(KeyData keys, ActionEnum action);
@@ -261,7 +261,7 @@ void Input::handle_events(){
         }
       }
 
-      this->action(action);
+      this->action_event(action);
     }
   }
   

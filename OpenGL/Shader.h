@@ -11,26 +11,26 @@ public:
         glUseProgram(program);
     }
 
-    int getUniform(char* name) {
+    int getUniform(const std::string& name) {
         int loc = uniforms[name];
         if (loc != 0){
             return loc;
         }
 
-        loc = glGetUniformLocation(program, name);
+        loc = glGetUniformLocation(program, name.c_str());
         uniforms[name] = loc;
         return loc;
     }
 
-    void setMatrix4f(char* name, GLfloat* data, GLboolean transpose = false){
+    void setMatrix4f(const std::string& name, GLfloat* data, GLboolean transpose = false){
         glUniformMatrix4fv(getUniform(name), 1, transpose, data);
     }
 
-    void setVec4f(char* name, GLfloat* data){
+    void setVec4f(const std::string& name, GLfloat* data){
         glUniform4fv(getUniform(name), 1, data);
     }
     
-    void setFloat(char* name, float data){
+    void setFloat(const std::string& name, float data){
         glUniform1f(getUniform(name), data);
     }
 
@@ -88,16 +88,5 @@ private:
                 std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "_" << name << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
             }
         }
-    }
-
-    int getUniformLocation(char* name)  {
-        if (uniforms.find(name) != uniforms.end())
-            return uniforms[name];
-
-        int location = glGetUniformLocation(program, name);
-        if (location == -1)
-            std::cout << "Warning: uniform '" << name << "' doesn't exist!" << std::endl;
-        uniforms[name] = location;
-        return location;
     }
 };
