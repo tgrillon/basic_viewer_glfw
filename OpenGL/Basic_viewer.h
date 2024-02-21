@@ -80,6 +80,9 @@ namespace OpenGL{
     void mouse_rotate();
     void switch_cam_mode();
     void switch_rotation_mode();
+
+    void rotate_clipping_plane();
+    void translate_clipping_plane();
     
   private:
     GLFWwindow *m_window;
@@ -149,10 +152,14 @@ namespace OpenGL{
     CAM_MODE cam_mode = PERSPECTIVE;
     CAM_ROTATION_MODE cam_rotation_mode = CENTER;
 
-    float m_clipping_plane_angle_rot = 0.0f;
+    glm::vec2 m_clipping_plane_angle_rot={0.0, 0.0};
+
+    // float m_clipping_plane_angle_rot = 0.0f;
     float m_clipping_plane_angle_step = 2.0f;
     
     int m_clipping_plane_rotation_axis = X_CP_AXIS;
+
+    glm::mat4 clipping_mMatrix = glm::mat4(1.0);
 
     enum {
       X_CP_AXIS=0, 
@@ -176,7 +183,9 @@ namespace OpenGL{
       INC_POINTS_SIZE, DEC_POINTS_SIZE,
       INC_EDGES_SIZE, DEC_EDGES_SIZE,
       CP_NEGATIVE_ROTATION, CP_POSITIVE_ROTATION, CP_ROTATION_AXIS,
-      INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP 
+      INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP, 
+
+      CP_ROTATION, CP_TRANSLATION
     };
     
     /*********************/

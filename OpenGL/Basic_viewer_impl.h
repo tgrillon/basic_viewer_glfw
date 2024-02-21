@@ -339,12 +339,6 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::setClippingUniforms() {
-    glm::vec3 rot_axis = glm::vec3(1, 0, 0);
-    if (m_clipping_plane_rotation_axis == Y_CP_AXIS) rot_axis = glm::vec3(0, 1, 0);
-    if (m_clipping_plane_rotation_axis == XY_CP_AXIS) rot_axis = glm::vec3(1, 1, 0);
-    
-    glm::mat4 clipping_mMatrix = glm::mat4(1.0f);
-    clipping_mMatrix = glm::rotate(clipping_mMatrix, glm::radians(m_clipping_plane_angle_rot), rot_axis);
     point_plane = clipping_mMatrix * glm::vec4(0, 0, 0, 1);
     clip_plane = clipping_mMatrix * glm::vec4(0, 0, 1, 0);
     plane_shader.use();
@@ -742,7 +736,36 @@ namespace OpenGL{
       case CP_POSITIVE_ROTATION:
         m_clipping_plane_angle_rot += m_clipping_plane_angle_step;
         break;
+      case CP_ROTATION:
+        rotate_clipping_plane();
+        break;
+      case CP_TRANSLATION:
+        translate_clipping_plane();
+        break;
     }
+  }
+
+  void Basic_Viewer::rotate_clipping_plane() {
+    glm::vec2 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y
+    };
+
+    mouse_old = get_cursor();
+    
+    clipping_mMatrix = glm::rotate(clipping_mMatrix, glm::radians(cursor_delta.x), glm::vec3(1,0,0));
+    clipping_mMatrix = glm::rotate(clipping_mMatrix, glm::radians(cursor_delta.y), glm::vec3(0,1,0));
+  }
+
+  void Basic_Viewer::translate_clipping_plane() {
+    glm::vec2 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y
+    };
+
+    mouse_old = get_cursor();
+
+    clipping_mMatrix = glm::translate()
   }
 
   void Basic_Viewer::end_action(ActionEnum action){
@@ -811,6 +834,9 @@ namespace OpenGL{
     add_action(GLFW_KEY_U, GLFW_KEY_LEFT_CONTROL, true, INC_CP_ROT_ANGLE_STEP);
 
     add_action(GLFW_KEY_Q, GLFW_KEY_LEFT_CONTROL, false, CP_ROTATION_AXIS);
+
+    add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_ROTATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
   }
 
   void Basic_Viewer::translate(glm::vec3 dir){
@@ -837,7 +863,7 @@ namespace OpenGL{
     
     cam_view += cursor_delta * cam_rot_speed;
 
-    std::cout << cam_view.x << " " << cam_view.y << std::endl;
+    // std::cout << cam_view.x << " " << cam_view.y << std::endl;
 
     glm::vec3 dir =  {
       cos(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y)),
