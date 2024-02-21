@@ -67,12 +67,10 @@ private:
     static void checkCompileErrors(GLuint shader, std::string type, std::string name) {
         GLint success;
         GLchar infoLog[1024];
-        std::cout << "Checking shader : " << shader << " " << type << "_" << name << "\n";
 
         if (type != "PROGRAM")
         {
             glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-            std::cout << "success : " << success << "\n";
 
             if (!success)
             {
@@ -83,7 +81,6 @@ private:
         else
         {
             glGetProgramiv(shader, GL_LINK_STATUS, &success);
-            std::cout << "success : " << success << "\n";
 
             if (!success)
             {

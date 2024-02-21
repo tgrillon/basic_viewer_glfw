@@ -2,12 +2,12 @@
 namespace CGAL {
 namespace OpenGL{
 
-  void glfwErrorCallback(int error, const char *description)
+  void Basic_Viewer::error_callback(int error, const char *description)
   {
-    fprintf(stderr, "GLFW returned an error:\n\t%s (%i)\n", description, error);
+    //fprintf(stderr, "GLFW returned an error:\n\t%s (%i)\n", description, error);
   }
 
-  GLFWwindow* initialise(const char *title)
+  GLFWwindow* Basic_Viewer::create_window(int width, int height, const char *title)
   {
     // Initialise GLFW
     if (!glfwInit())
@@ -21,15 +21,15 @@ namespace OpenGL{
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // Enable the GLFW runtime error callback function defined previously.
-    glfwSetErrorCallback(glfwErrorCallback);
+    glfwSetErrorCallback(error_callback);
 
     // Set additional window options
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, windowSamples); // MSAA
 
       // Create window using GLFW
-    GLFWwindow *window = glfwCreateWindow(windowWidth,
-                                          windowHeight,
+    GLFWwindow *window = glfwCreateWindow(width,
+                                          height,
                                           title,
                                           nullptr,
                                           nullptr);
@@ -45,7 +45,6 @@ namespace OpenGL{
 
     // Let the window be the current OpenGL context and initialise glad
     glfwMakeContextCurrent(window);
-    //glfwSetFramebufferSizeCallback(window, glViewport(0, 0, windowWidth, windowHeight));
     
     // Initialized GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -117,21 +116,20 @@ namespace OpenGL{
       init_keys_actions();
       cam_position = glm::vec3(0,0,-5);
       cam_forward = glm::vec3(0,0,1);
-
-      modelView = glm::lookAt(glm::vec3(0.0f,0.0f,10.0f), glm::vec3(0.0f,0.0f,-1.0f), glm::vec3(0.0f,1.0f,0.0f));
-      cam_perspective = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
-
-      modelViewProjection = cam_perspective * modelView;
     }
 
     void Basic_Viewer::show()
     {
-      m_window = initialise(m_title);
-
+      m_window = create_window(window_size.x, window_size.y, m_title);
+      
       glfwSetWindowUserPointer(m_window, this);
       glfwSetKeyCallback(m_window, key_callback);
       glfwSetCursorPosCallback(m_window, cursor_callback);
       glfwSetMouseButtonCallback(m_window, mouse_btn_callback);
+      glfwSetFramebufferSizeCallback(m_window, window_size_callback);
+
+      print_help();
+      set_cam_mode(cam_mode);
 
       GLint major, minor;
       glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -284,14 +282,12 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::updateUniforms(){
-    glm::mat4 projection = glm::perspective(glm::radians(45.f), (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
-
     modelView = cam_rotation_mode == WALK ?
       glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0))
       :
       glm::lookAt(cam_position, cam_look_center, glm::vec3(0,1,0));
 
-    modelViewProjection = projection * modelView;
+    modelViewProjection = cam_projection * modelView;
 
     // ================================================================
 
@@ -571,8 +567,18 @@ namespace OpenGL{
     viewer->on_mouse_btn_event(button, action, mods);
   }
 
+  void Basic_Viewer::window_size_callback(GLFWwindow* window, int width, int height) {
+    Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+
+    viewer->window_size = {width, height};
+    viewer->set_cam_mode(viewer->cam_mode);
+
+    glViewport(0, 0, width, height);
+  }
+
   void Basic_Viewer::start_action(ActionEnum action){
     switch (action) {
+      case MOUSE_TRANSLATE:
       case MOUSE_ROTATE:
         // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         mouse_old = get_cursor();
@@ -603,12 +609,23 @@ namespace OpenGL{
       case MOUSE_ROTATE: 
         mouse_rotate();
         break;
+      case MOUSE_TRANSLATE:
+        mouse_translate();
+        break;
       case SWITCH_CAM_MODE:
-        switch_cam_mode();
+        set_cam_mode(cam_mode == PERSPECTIVE ? ORTHOGRAPHIC : PERSPECTIVE);
         break;
       case SWITCH_CAM_ROTATION:
         switch_rotation_mode();
         break;
+      case FULLSCREEN:
+        fullscreen();
+        break;
+      case INC_ZOOM:
+        zoom(1.0f);
+        break;
+      case DEC_ZOOM:
+        zoom(-1.0f);
       case INC_MOVE_SPEED_D1:
         cam_speed += 0.1f;
         break;
@@ -770,6 +787,7 @@ namespace OpenGL{
 
   void Basic_Viewer::end_action(ActionEnum action){
     switch (action) {
+      case MOUSE_TRANSLATE:
       case MOUSE_ROTATE:
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         break;
@@ -787,6 +805,16 @@ namespace OpenGL{
 
     add_action(GLFW_KEY_C, GLFW_KEY_LEFT_CONTROL, false, SWITCH_CAM_MODE);
     add_action(GLFW_KEY_V, GLFW_KEY_LEFT_CONTROL, false, SWITCH_CAM_ROTATION);
+
+    add_action(GLFW_KEY_F, false, FULLSCREEN);
+
+    add_action(GLFW_KEY_Z, false, INC_ZOOM);
+    add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
+
+    add_action(GLFW_KEY_ENTER, GLFW_KEY_LEFT_ALT, false, FULLSCREEN);
+
+    add_action(GLFW_KEY_Z, false, INC_ZOOM);
+    add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
 
     add_action(GLFW_KEY_X, false, INC_MOVE_SPEED_1);
     add_action(GLFW_KEY_X, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
@@ -837,6 +865,24 @@ namespace OpenGL{
 
     add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_ROTATION);
     add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_2, true, MOUSE_TRANSLATE);
+
+    set_action_description(FORWARD, "Move forward");
+    set_action_description(BACKWARDS, "Move backwards");
+    
+    set_action_description(UP, "Move right");
+    set_action_description(RIGHT, "Move right");
+    set_action_description(LEFT, "Move left");
+    set_action_description(DOWN, "Move down");
+
+    set_action_description(SWITCH_CAM_MODE, "Switch to Perspective/Orthographic view");
+    set_action_description(SWITCH_CAM_ROTATION, "Switch to default/first person mode");
+
+    set_action_description(FULLSCREEN, "Switch to windowed/fullscreen mode");
+    
+    set_action_description(MOUSE_ROTATE, "Rotate the view");
+    set_action_description(MOUSE_TRANSLATE, "Move the view");
+
   }
 
   void Basic_Viewer::translate(glm::vec3 dir){
@@ -863,8 +909,6 @@ namespace OpenGL{
     
     cam_view += cursor_delta * cam_rot_speed;
 
-    // std::cout << cam_view.x << " " << cam_view.y << std::endl;
-
     glm::vec3 dir =  {
       cos(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y)),
       sin(glm::radians(cam_view.y)),
@@ -884,14 +928,16 @@ namespace OpenGL{
     cam_position = cam_look_center + dir * length(camToCenter);
   }
 
-  void Basic_Viewer::switch_cam_mode() {
+  void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
+    cam_mode = mode;
+
+    float ratio = (float)window_size.x/(float)window_size.y;
+
     if (cam_mode == PERSPECTIVE){
-      //cam_perspective = glm::ortho();
+      cam_projection = glm::perspective(glm::radians(45.f), (float)window_size.x/(float)window_size.y, 0.1f, 1000.0f);
       return;
     }
-
-    cam_perspective = glm::perspective(glm::radians(45.f),
-                                       (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+    cam_projection = glm::ortho(0.0f, cam_orth_zoom * ratio, 0.0f, cam_orth_zoom, 0.1f, 100.0f);
   }
 
   void Basic_Viewer::switch_rotation_mode() {
@@ -907,6 +953,101 @@ namespace OpenGL{
     glm::vec3 camToCenter = glm::normalize(cam_look_center - cam_position);
     cam_forward = camToCenter;
     cam_rotation_mode = cam_rotation_mode == WALK ? CENTER : WALK;
+  }
+
+  void Basic_Viewer::fullscreen(){
+    is_fullscreen = !is_fullscreen;
+
+    if (is_fullscreen) {
+      int count;
+      old_window_size = window_size;
+
+      GLFWmonitor* monitor = glfwGetMonitors(&count)[0];
+      const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+      glfwGetWindowPos(m_window, &old_window_pos.x, &old_window_pos.y); 
+      glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+      glViewport(0, 0, mode->width, mode->height);
+
+      std::cout << window_size.x << " " << window_size.y;
+      return;
+    }
+
+    window_size = old_window_size;
+    glfwSetWindowMonitor(m_window, nullptr, old_window_pos.x, old_window_pos.y, window_size.x, window_size.y, 60);
+    glViewport(0, 0, window_size.x, window_size.y);
+
+  }
+
+  void Basic_Viewer::mouse_translate(){
+    glm::vec3 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y,
+      0
+    };
+
+    mouse_old = get_cursor();
+
+    if (cursor_delta.x == 0 && cursor_delta.y == 0)
+      return;
+    
+    translate(glm::normalize(cursor_delta) * cam_speed);
+  }
+
+  void Basic_Viewer::print_help(){
+    std::unordered_map<Input::ActionEnum, std::vector<KeyData>> action_keys = get_action_keys();
+
+    ActionEnum sorted_camera_actions[] = {
+      MOUSE_ROTATE, MOUSE_TRANSLATE, UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARDS, FULLSCREEN,
+      SWITCH_CAM_MODE, SWITCH_CAM_ROTATION
+    };
+
+    std::cout << std::endl << "Help for Basic Viewer OpenGl :" << std::endl;
+
+    auto print_action = [this](std::vector<KeyData> keys, ActionEnum action){
+      std::string line;
+
+      std::string action_str = get_action_description(action);
+
+      if (action_str.empty()) action_str = "No description found";
+        
+      line += "   " + action_str;
+
+      if (keys.size() > 1) {
+        line += " (Alternatives : " + get_key_string(keys[1]);
+
+        if (keys.size() > 2)
+          line += ", " + get_key_string(keys[2]);
+
+        line += ").";
+      }
+
+      std::cout
+        << std::setw(12)
+        << (keys.size() > 0 ? get_key_string(keys[0]) : "(unbound)")
+        << line
+        << std::setw(0) 
+        << std::endl;
+    };
+
+    for (ActionEnum action : sorted_camera_actions){
+      std::vector<KeyData> keys = action_keys[action];
+
+      print_action(keys, action);
+      
+      action_keys.erase(action);
+    }
+
+    for (auto pair : action_keys){
+      print_action(pair.second, pair.first);
+    }
+  }
+
+  void Basic_Viewer::zoom(float z){
+    if (cam_mode == ORTHOGRAPHIC){
+      cam_orth_zoom += z;
+      set_cam_mode(ORTHOGRAPHIC);
+    }
   }
 
   // Blocking call

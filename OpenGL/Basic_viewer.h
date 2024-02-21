@@ -19,12 +19,12 @@ namespace OpenGL{
         DRAW_OUTSIDE_ONLY // draw only the part outside the clipping plane
       };
   
-  const int windowWidth = 1024;
-  const int windowHeight = 768;
+  enum CAM_MODE { PERSPECTIVE, ORTHOGRAPHIC };
+  enum CAM_ROTATION_MODE { CENTER, WALK };
+
   const int windowSamples = 4;
 
   void glfwErrorCallback(int error, const char *description);
-  GLFWwindow *initialise(const char *title);
   inline void draw_graphics_scene(const Graphics_scene &graphics_scene,
                                     const char *title = "CGAL Basic Viewer");
 
@@ -39,14 +39,18 @@ namespace OpenGL{
                     bool inverse_normal=false,
                     bool draw_rays = true,
                     bool draw_text = true,
-                    bool draw_lines = true);
-    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-    static void cursor_callback(GLFWwindow* window, double xpos, double ypo);
-    static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
-    
+                    bool draw_lines = true);    
     void show();
     
   private:
+    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void cursor_callback(GLFWwindow* window, double xpos, double ypo);
+    static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
+    static void window_size_callback(GLFWwindow* window, int width, int height);
+  
+    static GLFWwindow* create_window (int width, int height, const char *title);
+    static void error_callback (int error, const char *description);
+
     void compileShaders();
     void loadBuffer(int i, int location, int gsEnum, int dataCount);
     void initialiseBuffers();
@@ -78,11 +82,17 @@ namespace OpenGL{
     
     void translate(const glm::vec3 dir);
     void mouse_rotate();
-    void switch_cam_mode();
+    void mouse_translate();
+    void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
 
     void rotate_clipping_plane();
     void translate_clipping_plane();
+
+    void zoom(float z);
+    void fullscreen();
+
+    void print_help();
     
   private:
     GLFWwindow *m_window;
@@ -141,14 +151,17 @@ namespace OpenGL{
     
     float cam_speed, cam_rot_speed;
 
-    glm::mat4 cam_perspective;
+    glm::mat4 cam_projection;
     glm::vec3 cam_position;
     glm::vec2 cam_view = {0, 0};
     glm::vec3 cam_forward = {}, cam_look_center = {};
+    float cam_orth_zoom = 1.0f;
 
-    enum CAM_MODE { PERSPECTIVE, ORTHOGONAL };
-    enum CAM_ROTATION_MODE { CENTER, WALK };
+    glm::ivec2 window_size {1024, 768};
+    glm::ivec2 old_window_size;
+    glm::ivec2 old_window_pos;
 
+    bool is_fullscreen = false;
     CAM_MODE cam_mode = PERSPECTIVE;
     CAM_ROTATION_MODE cam_rotation_mode = CENTER;
 
@@ -168,8 +181,11 @@ namespace OpenGL{
     };
 
     enum Actions {
-      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, MOUSE_ROTATE,
+      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, 
+      MOUSE_ROTATE, MOUSE_TRANSLATE,
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
+      FULLSCREEN,
+      INC_ZOOM, DEC_ZOOM,
       INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
       DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
       INC_ROT_SPEED_D1, INC_ROT_SPEED_1,
@@ -204,6 +220,9 @@ namespace OpenGL{
       VAO_CLIPPING_PLANE,
       NB_VAO_BUFFERS
     };
+
+
+
 
     GLuint m_vao[NB_VAO_BUFFERS];
 
