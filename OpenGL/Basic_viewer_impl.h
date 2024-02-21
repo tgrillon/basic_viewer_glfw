@@ -574,13 +574,13 @@ namespace OpenGL{
   void Basic_Viewer::start_action(ActionEnum action){
     switch (action) {
       case MOUSE_ROTATE:
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         mouse_old = get_cursor();
         break;
     }
   }
 
-  void Basic_Viewer::action(ActionEnum action){
+  void Basic_Viewer::action_event(ActionEnum action){
     switch (action){
       case UP:
         translate(glm::vec3(0, cam_speed, 0));
@@ -765,7 +765,7 @@ namespace OpenGL{
 
     mouse_old = get_cursor();
 
-    clipping_mMatrix = glm::translate()
+    // clipping_mMatrix = glm::translate()
   }
 
   void Basic_Viewer::end_action(ActionEnum action){

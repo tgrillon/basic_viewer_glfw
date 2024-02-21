@@ -65,7 +65,7 @@ protected:
   void handle_events();
 
   virtual void start_action(ActionEnum action) = 0;
-  virtual void action(ActionEnum action) = 0;
+  virtual void action_event(ActionEnum action) = 0;
   virtual void end_action(ActionEnum action) = 0;
 private:
   void add_action(std::deque<Action>& actions, KeyData keys, ActionEnum action);
@@ -164,7 +164,7 @@ void Input::handle_events(){
         }
       }
 
-      this->action(action);
+      this->action_event(action);
     }
   }
 
@@ -177,7 +177,7 @@ void Input::handle_events(){
     if (!consumed_mouse_btn[k.key1] && btn_map[k.key1]
     && (k.key2 < 0 || holding_keys[k.key2])
     && (k.key3 < 0 || holding_keys[k.key3])){
-      consumed_keys[k.key1] = true;
+      // consumed_mouse_btn[k.key1] = true;
 
       if (k.hold){
         activated_actions[action] = true;
@@ -187,8 +187,7 @@ void Input::handle_events(){
         }
       }
 
-
-      this->action(action);
+      this->action_event(action);
     }
   }
   

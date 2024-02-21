@@ -73,7 +73,7 @@ namespace OpenGL{
     void init_keys_actions();
 
     void start_action(ActionEnum action) override;
-    void action(ActionEnum action) override;
+    void action_event(ActionEnum action) override;
     void end_action(ActionEnum action) override;
     
     void translate(const glm::vec3 dir);
