@@ -1,3 +1,5 @@
+#pragma once
+
 #include <CGAL/Graphics_scene.h>
 #include <CGAL/Basic_shaders.h>
 
@@ -11,8 +13,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-namespace CGAL {
-namespace OpenGL{
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
+namespace CGAL::OpenGL {
   enum RenderMode{ // rendering mode
         DRAW_ALL=-1, // draw all
         DRAW_INSIDE_ONLY, // draw only the part inside the clipping plane
@@ -40,7 +45,9 @@ namespace OpenGL{
                     bool draw_rays = true,
                     bool draw_text = true,
                     bool draw_lines = true);    
+    
     void show();
+    void make_screenshot(const std::string& pngpath);
     
   private:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -48,7 +55,7 @@ namespace OpenGL{
     static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
     static void window_size_callback(GLFWwindow* window, int width, int height);
   
-    static GLFWwindow* create_window (int width, int height, const char *title);
+    static GLFWwindow* create_window (int width, int height, const char *title, bool hidden = false);
     static void error_callback (int error, const char *description);
 
     void compileShaders();
@@ -62,10 +69,7 @@ namespace OpenGL{
     void setPLUniforms();
     void setClippingUniforms();
 
-    void setFaceUniforms(RenderMode rendering_mode);
-    void setPLUniforms(RenderMode rendering_mode, bool set_point_size=false);
-
-    void renderScene(float time);
+    void renderScene();
     void draw_faces();
     void draw_rays();
     void draw_lines();
@@ -94,6 +98,7 @@ namespace OpenGL{
 
     void zoom(float z);
     void fullscreen();
+    void screenshot(const std::string& pngpath);
 
     void print_help();
     
@@ -187,7 +192,7 @@ namespace OpenGL{
       MOUSE_ROTATE, MOUSE_TRANSLATE,
       UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, 
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
-      FULLSCREEN,
+      FULLSCREEN, SCREENSHOT,
       INC_ZOOM, DEC_ZOOM,
       INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
       DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
@@ -234,4 +239,4 @@ namespace OpenGL{
 
     GLuint buffers[NB_GL_BUFFERS]; // +1 for the vbo buffer of clipping plane
   };
-}}
+}

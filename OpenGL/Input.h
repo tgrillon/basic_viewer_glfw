@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <queue>
@@ -93,11 +95,19 @@ private:
 };
 
 std::string key_name(int key) {
-  if (key >= 290 && key <= 314) // F1-25
-    return "F" + char(key - 230);
+  std::string result = "???";
+
+  if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F25) {// F1-25
+    result = "F";
+    result += char(key - (GLFW_KEY_F1 - '1'));
+    return result;
+  }
   
-  if (key >= 320 && key <= 329) // Keypad KP1-9
-    return  "KP" + char(key - 260);
+  if (key >= GLFW_KEY_KP_0 && key <= GLFW_KEY_KP_9) {// Keypad KP1-9
+    result = "KP";
+    result += char(key - (GLFW_KEY_KP_0 - '0'));
+    return result;
+  }
 
   switch (key) {
     case GLFW_KEY_UP: return "UP";
@@ -112,7 +122,6 @@ std::string key_name(int key) {
     case GLFW_KEY_RIGHT_ALT: return "RALT";
   }
 
-  std::string result = "???";
 
   const char* name = glfwGetKeyName(key, 0);
 
@@ -139,7 +148,7 @@ std::string Input::get_key_string(KeyData keys) {
 
   if (keys.mouse) {
     result += "MB";
-    result += char(keys.get_primary_key() + 48);
+    result += char(keys.get_primary_key() + '0');
     return result;
   }
 

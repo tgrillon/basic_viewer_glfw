@@ -1,13 +1,13 @@
-#include "Basic_viewer.h"
-namespace CGAL {
-namespace OpenGL{
+#pragma once
 
+#include "Basic_viewer.h"
+namespace CGAL::OpenGL {
   void Basic_Viewer::error_callback(int error, const char *description)
   {
     //fprintf(stderr, "GLFW returned an error:\n\t%s (%i)\n", description, error);
   }
 
-  GLFWwindow* Basic_Viewer::create_window(int width, int height, const char *title)
+  GLFWwindow* Basic_Viewer::create_window(int width, int height, const char *title, bool hidden)
   {
     // Initialise GLFW
     if (!glfwInit())
@@ -17,6 +17,9 @@ namespace OpenGL{
     }
 
     // OpenGL 2.1 with compatibilty
+    if (hidden)
+      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -64,6 +67,7 @@ namespace OpenGL{
 
     return window;
   }
+
 
   Basic_Viewer::Basic_Viewer(const Graphics_scene &graphics_scene,
                   const char *title,
@@ -141,21 +145,32 @@ namespace OpenGL{
 
       compileShaders();
 
-      float test = 0;
       while (!glfwWindowShouldClose(m_window))
       {
-        test += 0.7;
-        // Process inputs
-
-        // Rendering
-        glClearColor(1.0f,1.0f,1.0f, 1.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderScene(test);
-
+        renderScene();
         glfwSwapBuffers(m_window);
         handle_events();
       }
 
+      glfwTerminate();
+    }
+
+    void Basic_Viewer::make_screenshot(const std::string& pngpath) {
+      m_window = create_window(window_size.x, window_size.y, m_title, true);
+      set_cam_mode(cam_mode); 
+      
+      GLint major, minor;
+      glGetIntegerv(GL_MAJOR_VERSION, &major);
+      glGetIntegerv(GL_MINOR_VERSION, &minor);
+
+      if (major > 4 || major == 4 && minor >= 3){
+        m_is_opengl_4_3 = true;
+      }
+
+      compileShaders();
+      renderScene();
+      glfwSwapBuffers(m_window);
+      screenshot(pngpath);
       glfwTerminate();
     }
 
@@ -191,11 +206,9 @@ namespace OpenGL{
 
   void Basic_Viewer::initialiseBuffers()
   {
-    // TODO eviter de tout recharger à chaque update()
-
-
-    // Déplacer aileurs! 
+    // TODO faire qu'une seule fois: 
     glGenBuffers(NB_GL_BUFFERS, buffers);
+
     glGenVertexArrays(NB_VAO_BUFFERS, m_vao); 
 
     unsigned int bufn = 0;
@@ -328,10 +341,12 @@ namespace OpenGL{
     plane_shader.setMatrix4f("m_matrix", glm::value_ptr(clipping_mMatrix));
   }
   
-  void Basic_Viewer::renderScene(float time)
+  void Basic_Viewer::renderScene()
   {
     if(!m_are_buffers_initialized) { initialiseBuffers(); }
     
+    glClearColor(1.0f,1.0f,1.0f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_LINE_SMOOTH);
@@ -611,6 +626,10 @@ namespace OpenGL{
       case FULLSCREEN:
         fullscreen();
         break;
+      case SCREENSHOT:
+        screenshot("./screenshot.png");
+        std::cout << "Screenshot saved in local directory." << std::endl; 
+        break;
       case INC_ZOOM:
         zoom(1.0f);
         break;
@@ -800,6 +819,7 @@ namespace OpenGL{
     add_action(GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, false, DEC_ZOOM);
 
     add_action(GLFW_KEY_ENTER, GLFW_KEY_LEFT_ALT, false, FULLSCREEN);
+    add_action(GLFW_KEY_F1, false, SCREENSHOT);
 
     add_action(GLFW_KEY_X, false, INC_MOVE_SPEED_1);
     add_action(GLFW_KEY_X, GLFW_KEY_LEFT_CONTROL, false, INC_MOVE_SPEED_D1);
@@ -857,6 +877,7 @@ namespace OpenGL{
       {SWITCH_CAM_ROTATION, "Switch to default/first person mode"},
 
       {FULLSCREEN, "Switch to windowed/fullscreen mode"},
+      {SCREENSHOT, "Take a screenshot of the current view"},
       
       {MOUSE_ROTATE, "Rotate the view"},
       {MOUSE_TRANSLATE, "Move the view"},
@@ -1033,10 +1054,29 @@ namespace OpenGL{
     }
   }
 
+  void Basic_Viewer::screenshot(const std::string& filepath) {
+    // https://lencerf.github.io/post/2019-09-21-save-the-opengl-rendering-to-image-file/ (thanks)
+    // https://github.com/nothings/stb/
+    // The stb lib used here is from glfw/deps 
+    
+    const GLsizei nrChannels = 3;
+    GLsizei stride = nrChannels * window_size.x;
+    stride += (stride % 4) ? (4 - stride % 4) : 0; // stride must be a multiple of 4
+    GLsizei bufferSize = stride * window_size.y;
+
+    std::vector<char> buffer(bufferSize);
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, window_size.x, window_size.y, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(filepath.data(), window_size.x, window_size.y, nrChannels, buffer.data(), stride);
+  }
+
   // Blocking call
   inline void draw_graphics_scene(const Graphics_scene &graphics_scene, const char *title)
   {
     Basic_Viewer(graphics_scene, title).show();
   }
-} // End OpenGL Namespace
-} // End CGAL Namespace
+} 

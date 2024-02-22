@@ -13,9 +13,12 @@ add_subdirectory (vendor/glm)
 
 include_directories (
     .
+    vendor/glfw/deps/
     vendor/glfw/include/
     vendor/glad/include/
     vendor/glm/
+    vendor/stb/
+
     ${CGAL_DIR}/Basic_viewer/include/ # TEMPO
 )
 
