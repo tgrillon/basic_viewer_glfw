@@ -53,6 +53,7 @@ namespace OpenGL{
 
     void compileShaders();
     void loadBuffer(int i, int location, int gsEnum, int dataCount);
+    void loadBuffer(int i, int location, const std::vector<float>& vector, int dataCount);
     void initialiseBuffers();
 
     void updateUniforms();
@@ -67,9 +68,11 @@ namespace OpenGL{
     void renderScene(float time);
     void draw_faces();
     void draw_rays();
-    void draw_vertices();
-    void draw_edges();
     void draw_lines();
+    
+    void draw_faces_(RenderMode mode);
+    void draw_vertices(RenderMode mode);
+    void draw_edges(RenderMode mode);
 
     void generate_clipping_plane();
     void render_clipping_plane();

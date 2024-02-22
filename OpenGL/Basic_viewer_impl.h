@@ -173,16 +173,20 @@ namespace OpenGL{
     plane_shader = Shader::loadShader(plane_vert, plane_frag, "PLANE");
   }
 
-  void Basic_Viewer::loadBuffer(int i, int location, int gsEnum, int dataCount){ 
+  void Basic_Viewer::loadBuffer(int i, int location, const std::vector<float>& vector, int dataCount){ 
     glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
 
-    glBufferData(GL_ARRAY_BUFFER,
-                  m_scene.get_size_of_index(gsEnum),
-                  m_scene.get_array_of_index(gsEnum).data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vector.size() * sizeof(float), vector.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(location, dataCount, GL_FLOAT, GL_FALSE, dataCount * sizeof(float), nullptr);
 
     glEnableVertexAttribArray(location);
+  }
+
+
+  void Basic_Viewer::loadBuffer(int i, int location, int gsEnum, int dataCount){ 
+    const std::vector<float>& vector = m_scene.get_array_of_index(gsEnum);
+    loadBuffer(i, location, vector, dataCount);
   }
 
   void Basic_Viewer::initialiseBuffers()
@@ -266,16 +270,8 @@ namespace OpenGL{
     // 6) clipping plane shader
     if (m_is_opengl_4_3) {
       generate_clipping_plane();
-      plane_shader.use();
-
       glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
-      glBindBuffer(GL_ARRAY_BUFFER, buffers[bufn++]);
-      glBufferData(GL_ARRAY_BUFFER,
-                    m_array_for_clipping_plane.size()*sizeof(float),
-                    m_array_for_clipping_plane.data(), GL_STATIC_DRAW);
-
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-      glEnableVertexAttribArray(0);
+      loadBuffer(bufn++, 0, m_array_for_clipping_plane, 3);
     }
 
     m_are_buffers_initialized = true;
@@ -308,30 +304,19 @@ namespace OpenGL{
     face_shader.setVec4f("light_spec", glm::value_ptr(m_specular));
     face_shader.setVec4f("light_amb", glm::value_ptr(m_ambient));
     face_shader.setFloat("spec_power", m_shininess);    
-  }
-
-  void Basic_Viewer::setFaceUniforms(RenderMode rendering_mode) {
-    face_shader.use();
 
     face_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
     face_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
     face_shader.setFloat("rendering_transparency", m_clipping_plane_rendering_transparency);
-    face_shader.setFloat("rendering_mode", rendering_mode);
   }
 
   void Basic_Viewer::setPLUniforms() {
     pl_shader.use();
     
-    pl_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
-  }
-
-  void Basic_Viewer::setPLUniforms(RenderMode rendering_mode, bool set_point_size) {
-    pl_shader.use();
-    
-    pl_shader.setFloat("point_size", m_size_points);
     pl_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
     pl_shader.setVec4f("pointPlane", glm::value_ptr(point_plane));
-    pl_shader.setFloat("rendering_mode", rendering_mode);
+    pl_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
+    pl_shader.setFloat("point_size", m_size_points);
   }
 
   void Basic_Viewer::setClippingUniforms() {
@@ -353,88 +338,88 @@ namespace OpenGL{
     
     updateUniforms();
 
+    bool half = m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY;
+    
     if (m_draw_vertices)  { 
-      if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) { 
-        setPLUniforms(DRAW_INSIDE_ONLY, true); 
-      } else { 
-        setPLUniforms(DRAW_ALL, true); 
-      }
-      draw_vertices(); 
+      draw_vertices(half ? DRAW_INSIDE_ONLY : DRAW_ALL); 
     }
     if (m_draw_edges) {
-       if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) { 
-        setPLUniforms(DRAW_INSIDE_ONLY); 
-      } else { 
-        setPLUniforms(DRAW_ALL); 
-      }
-      draw_edges(); 
+      draw_edges(half ? DRAW_INSIDE_ONLY : DRAW_ALL); 
     }
-    if (m_draw_faces) { 
-      if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF) {
-        // The z-buffer will prevent transparent objects from being displayed behind other transparent objects.
-        // Before rendering all transparent objects, disable z-testing first.
-
-        // 1. draw solid first
-        setFaceUniforms(DRAW_INSIDE_ONLY);
-        draw_faces();
-
-        // 2. draw transparent layer second with back face culling to avoid messy triangles
-        glDepthMask(false); //disable z-testing
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CW);
-        setFaceUniforms(DRAW_OUTSIDE_ONLY);
-        draw_faces();
-
-        // 3. draw solid again without culling and blend to make sure the solid mesh is visible
-        glDepthMask(true); //enable z-testing
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_BLEND);
-        setFaceUniforms(DRAW_INSIDE_ONLY);
-        draw_faces();
-
-        // 4. render clipping plane here
-        render_clipping_plane();
-      } else if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_WIRE_HALF ||
-               m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) 
-      {
-        // 1. draw solid HALF
-        setFaceUniforms(DRAW_INSIDE_ONLY);
-        draw_faces();
-
-        // 2. render clipping plane here
-        render_clipping_plane();
-      } else {
-        // 1. draw solid FOR ALL
-        setFaceUniforms(DRAW_ALL);
-        draw_faces(); 
-      }
-    }
+    if (m_draw_faces)     { draw_faces(); }
     if (m_draw_rays)      { draw_rays(); } 
     if (m_draw_lines)     { draw_lines(); }
   }
 
-  void Basic_Viewer::draw_faces(){
+  void Basic_Viewer::draw_faces() {
     face_shader.use();
+
+    if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF) {
+      // The z-buffer will prevent transparent objects from being displayed behind other transparent objects.
+      // Before rendering all transparent objects, disable z-testing first.
+
+      // 1. draw solid first
+      draw_faces_(DRAW_INSIDE_ONLY);
+
+      // 2. draw transparent layer second with back face culling to avoid messy triangles
+      glDepthMask(false); //disable z-testing
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_CULL_FACE);
+      glCullFace(GL_BACK);
+      glFrontFace(GL_CW);
+      draw_faces_(DRAW_OUTSIDE_ONLY);
+
+      // 3. draw solid again without culling and blend to make sure the solid mesh is visible
+      glDepthMask(true); //enable z-testing
+      glDisable(GL_CULL_FACE);
+      glDisable(GL_BLEND);
+      draw_faces_(DRAW_INSIDE_ONLY);
+
+      // 4. render clipping plane here
+      render_clipping_plane();
+      return;
+    }
+      
+    if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_WIRE_HALF ||
+        m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY) 
+    {
+      // 1. draw solid HALF
+      draw_faces_(DRAW_INSIDE_ONLY);
+
+      // 2. render clipping plane here
+      render_clipping_plane();
+      return;
+    }
+
+    // 1. draw solid FOR ALL
+    draw_faces_(DRAW_ALL); 
+  }
+
+  void Basic_Viewer::draw_faces_(RenderMode mode){
+    face_shader.use();
+    face_shader.setFloat("rendering_mode", mode);
+    
 
     glBindVertexArray(m_vao[VAO_MONO_FACES]);
     glVertexAttrib4fv(2, glm::value_ptr(m_faces_mono_color));
     glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_FACES));
   
     glBindVertexArray(m_vao[VAO_COLORED_FACES]);
+
     if (m_use_mono_color) {
       glDisableVertexAttribArray(2);
       glVertexAttrib4fv(2, glm::value_ptr(m_faces_mono_color));
     } else {
       glEnableVertexAttribArray(2);
     }
+
     glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_FACES));
   }
 
   void Basic_Viewer::draw_rays() {
     pl_shader.use();
+    pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
     glBindVertexArray(m_vao[VAO_MONO_RAYS]);
     glVertexAttrib4fv(1, glm::value_ptr(m_rays_mono_color));
@@ -452,8 +437,10 @@ namespace OpenGL{
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_RAYS));
   }
 
-  void Basic_Viewer::draw_vertices() {
+  void Basic_Viewer::draw_vertices(RenderMode render) {
     pl_shader.use();
+    pl_shader.setFloat("rendering_mode", render);
+    
 
     glBindVertexArray(m_vao[VAO_MONO_POINTS]);
     glVertexAttrib4fv(1, glm::value_ptr(m_vertices_mono_color));
@@ -472,11 +459,13 @@ namespace OpenGL{
 
   void Basic_Viewer::draw_lines() {
     pl_shader.use();
+    pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
     glBindVertexArray(m_vao[VAO_MONO_LINES]);
     glVertexAttrib4fv(1, glm::value_ptr(m_lines_mono_color));
     glLineWidth(m_size_lines);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_LINES));
+  
   
     glBindVertexArray(m_vao[VAO_COLORED_LINES]);
     if (m_use_mono_color) {
@@ -488,8 +477,10 @@ namespace OpenGL{
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_LINES));
   }
 
-  void Basic_Viewer::draw_edges() {
+  void Basic_Viewer::draw_edges(RenderMode mode) {
     pl_shader.use();
+
+    pl_shader.setFloat("rendering_mode", mode);
           
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
     glVertexAttrib4fv(1, glm::value_ptr(m_edges_mono_color));
@@ -538,13 +529,12 @@ namespace OpenGL{
     }
 
   void Basic_Viewer::render_clipping_plane() {
-    if (!m_is_opengl_4_3) return;
-      if (!m_clipping_plane_rendering) return;
-      plane_shader.use();
-      glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
-      glLineWidth(0.1f);
-      glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
-      glLineWidth(1.f);
+    if (!m_clipping_plane_rendering || !m_is_opengl_4_3) return;
+    plane_shader.use();
+    glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
+    glLineWidth(0.1f);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
+    glLineWidth(1.f);
   }
 
   void Basic_Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -855,44 +845,41 @@ namespace OpenGL{
     add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
     
     /*===================== BIND DESCRIPTIONS ============================*/
+    set_action_description({
+      {FORWARD, "Move forward"},
+      {BACKWARDS, "Move backwards"},
+      {UP, "Move right"},
+      {RIGHT, "Move right"},
+      {LEFT, "Move left"},
+      {DOWN, "Move down"},
+        
+      {SWITCH_CAM_MODE, "Switch to Perspective/Orthographic view"},
+      {SWITCH_CAM_ROTATION, "Switch to default/first person mode"},
 
-    set_action_description(FORWARD, "Move forward");
-    set_action_description(BACKWARDS, "Move backwards");
-    
-    set_action_description(UP, "Move right");
-    set_action_description(RIGHT, "Move right");
-    set_action_description(LEFT, "Move left");
-    set_action_description(DOWN, "Move down");
+      {FULLSCREEN, "Switch to windowed/fullscreen mode"},
+      
+      {MOUSE_ROTATE, "Rotate the view"},
+      {MOUSE_TRANSLATE, "Move the view"},
 
-    set_action_description(SWITCH_CAM_MODE, "Switch to Perspective/Orthographic view");
-    set_action_description(SWITCH_CAM_ROTATION, "Switch to default/first person mode");
-
-    set_action_description(FULLSCREEN, "Switch to windowed/fullscreen mode");
-    
-    set_action_description(MOUSE_ROTATE, "Rotate the view");
-    set_action_description(MOUSE_TRANSLATE, "Move the view");
-
-    set_action_description(CLIPPING_PLANE_MODE, "Switch clipping plane display mode");
-    set_action_description(CLIPPING_PLANE_DISPLAY, "Toggle clipping plane rendering on/off");
-    
-    set_action_description(INC_LIGHT_ALL, "Increase light (all colors, use shift/alt/ctrl for one rgb component)");
-    set_action_description(DEC_LIGHT_ALL, "Decrease light (all colors, use shift/alt/ctrl for one rgb component)");
-    
-    set_action_description(VERTICES_DISPLAY, "Toggles vertices display");
-    set_action_description(EDGES_DISPLAY, "Toggles edges display");
-    set_action_description(FACES_DISPLAY, "Toggles faces display");
-    
-    set_action_description(INC_POINTS_SIZE, "Increase size of vertices");
-    set_action_description(DEC_POINTS_SIZE, "Decrease size of vertices");
-    set_action_description(INC_EDGES_SIZE, "Increase size of edges");
-    set_action_description(DEC_EDGES_SIZE, "Decrease size of edges");
-    
-    set_action_description(MONO_COLOR, "Toggles mono color");
-    set_action_description(INVERSE_NORMAL, "Inverse direction of normals");
-    set_action_description(SHADING_MODE, "Switch between flat/Gouraud shading display");
-
-
-
+      {CLIPPING_PLANE_MODE, "Switch clipping plane display mode"},
+      {CLIPPING_PLANE_DISPLAY, "Toggle clipping plane rendering on/off"},
+      
+      {INC_LIGHT_ALL, "Increase light (all colors, use shift/alt/ctrl for one rgb component)"},
+      {DEC_LIGHT_ALL, "Decrease light (all colors, use shift/alt/ctrl for one rgb component)"},
+      
+      {VERTICES_DISPLAY, "Toggles vertices display"},
+      {EDGES_DISPLAY, "Toggles edges display"},
+      {FACES_DISPLAY, "Toggles faces display"},
+      
+      {INC_POINTS_SIZE, "Increase size of vertices"},
+      {DEC_POINTS_SIZE, "Decrease size of vertices"},
+      {INC_EDGES_SIZE, "Increase size of edges"},
+      {DEC_EDGES_SIZE, "Decrease size of edges"},
+      
+      {MONO_COLOR, "Toggles mono color"},
+      {INVERSE_NORMAL, "Inverse direction of normals"},
+      {SHADING_MODE, "Switch between flat/Gouraud shading display"}
+    });
   }
 
   void Basic_Viewer::translate(glm::vec3 dir){

@@ -73,6 +73,8 @@ public:
   void add_mouse_action(int btn, int mod1, int mod2, bool hold, ActionEnum action);
 
   void set_action_description(ActionEnum action, std::string description);
+  void set_action_description(std::unordered_map<ActionEnum, std::string> descriptions);
+
   std::string& get_action_description(ActionEnum action);
   std::map<ActionEnum, std::vector<KeyData>> get_action_keys();
 
@@ -137,7 +139,7 @@ std::string Input::get_key_string(KeyData keys) {
 
   if (keys.mouse) {
     result += "MB";
-    result += char(keys.key1 + 48);
+    result += char(keys.get_primary_key() + 48);
     return result;
   }
 
@@ -186,6 +188,10 @@ void Input::add_action(KeyData keys, ActionEnum action) {
 
 void Input::set_action_description(ActionEnum action, std::string description) {
   action_description[action] = description;
+}
+
+void Input::set_action_description(std::unordered_map<ActionEnum, std::string> descriptions) {
+  action_description.merge(descriptions);
 }
 
 std::string& Input::get_action_description(ActionEnum action) {
