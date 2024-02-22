@@ -74,7 +74,7 @@ public:
 
   void set_action_description(ActionEnum action, std::string description);
   std::string& get_action_description(ActionEnum action);
-  std::unordered_map<ActionEnum, std::vector<KeyData>> get_action_keys();
+  std::map<ActionEnum, std::vector<KeyData>> get_action_keys();
 
 
 protected:
@@ -192,8 +192,10 @@ std::string& Input::get_action_description(ActionEnum action) {
   return action_description[action];
 }
 
-std::unordered_map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
-  std::unordered_map<ActionEnum, std::vector<KeyData>> result;
+std::map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
+  // A map sorts the key by increasing value;
+  std::map<ActionEnum, std::vector<KeyData>> result;
+  
 
   for (Action act : key_actions){
     if (result.count(act.action) == 0){

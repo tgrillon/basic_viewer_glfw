@@ -1005,16 +1005,14 @@ namespace OpenGL{
   }
 
   void Basic_Viewer::print_help(){
-    std::unordered_map<Input::ActionEnum, std::vector<KeyData>> action_keys = get_action_keys();
-
-    ActionEnum sorted_camera_actions[] = {
-      MOUSE_ROTATE, MOUSE_TRANSLATE, UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARDS, FULLSCREEN,
-      SWITCH_CAM_MODE, SWITCH_CAM_ROTATION
-    };
+    std::map<Input::ActionEnum, std::vector<KeyData>> action_keys = get_action_keys();
 
     std::cout << std::endl << "Help for Basic Viewer OpenGl :" << std::endl;
 
-    auto print_action = [this](std::vector<KeyData> keys, ActionEnum action){
+    for (auto pair : action_keys){
+      std::vector<KeyData> keys = pair.second;
+      ActionEnum action = pair.first;
+
       std::string line;
 
       std::string action_str = get_action_description(action);
@@ -1038,18 +1036,6 @@ namespace OpenGL{
         << line
         << std::setw(0) 
         << std::endl;
-    };
-
-    for (ActionEnum action : sorted_camera_actions){
-      std::vector<KeyData> keys = action_keys[action];
-
-      print_action(keys, action);
-      
-      action_keys.erase(action);
-    }
-
-    for (auto pair : action_keys){
-      print_action(pair.second, pair.first);
     }
   }
 
