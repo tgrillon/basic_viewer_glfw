@@ -126,6 +126,7 @@ namespace OpenGL{
       glfwSetKeyCallback(m_window, key_callback);
       glfwSetCursorPosCallback(m_window, cursor_callback);
       glfwSetMouseButtonCallback(m_window, mouse_btn_callback);
+      glfwSetScrollCallback(m_window, scroll_callback);
       glfwSetFramebufferSizeCallback(m_window, window_size_callback);
 
       print_help();
@@ -539,12 +540,12 @@ namespace OpenGL{
 
   void Basic_Viewer::render_clipping_plane() {
     if (!m_is_opengl_4_3) return;
-      if (!m_clipping_plane_rendering) return;
-      plane_shader.use();
-      glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
-      glLineWidth(0.1f);
-      glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
-      glLineWidth(1.f);
+    if (!m_clipping_plane_rendering) return;
+    plane_shader.use();
+    glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
+    glLineWidth(0.1f);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(m_array_for_clipping_plane.size()/3));
+    glLineWidth(1.f);
   }
 
   void Basic_Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -576,8 +577,16 @@ namespace OpenGL{
     glViewport(0, 0, width, height);
   }
 
+  void Basic_Viewer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    Basic_Viewer* viewer = static_cast<Basic_Viewer*>(glfwGetWindowUserPointer(window)); 
+    viewer->on_scroll_event(xoffset, yoffset);
+  }
+
   void Basic_Viewer::start_action(ActionEnum action){
     switch (action) {
+      case CP_ROTATION:
+      case CP_TRANSLATION:
+      case CP_TRANS_CAM_DIR:
       case MOUSE_TRANSLATE:
       case MOUSE_ROTATE:
         // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -768,30 +777,11 @@ namespace OpenGL{
       case CP_TRANSLATION:
         translate_clipping_plane();
         break;
+      case CP_TRANS_CAM_DIR:
+        cam_dir_translate_clipping_plane();
+        break;
+
     }
-  }
-
-  void Basic_Viewer::rotate_clipping_plane() {
-    glm::vec2 cursor_delta {
-      get_cursor().x - mouse_old.x, 
-      get_cursor().y - mouse_old.y
-    };
-
-    mouse_old = get_cursor();
-    
-    clipping_mMatrix = glm::rotate(clipping_mMatrix, glm::radians(cursor_delta.x), glm::vec3(1,0,0));
-    clipping_mMatrix = glm::rotate(clipping_mMatrix, glm::radians(cursor_delta.y), glm::vec3(0,1,0));
-  }
-
-  void Basic_Viewer::translate_clipping_plane() {
-    glm::vec2 cursor_delta {
-      get_cursor().x - mouse_old.x, 
-      get_cursor().y - mouse_old.y
-    };
-
-    mouse_old = get_cursor();
-
-    // clipping_mMatrix = glm::translate()
   }
 
   void Basic_Viewer::end_action(ActionEnum action){
@@ -863,7 +853,8 @@ namespace OpenGL{
     add_action(GLFW_KEY_PAGE_DOWN, GLFW_KEY_LEFT_CONTROL, true, DEC_LIGHT_B);
 
     add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_ROTATION);
-    add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_2, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANS_CAM_DIR);
     
     /*===================== BIND DESCRIPTIONS ============================*/
 
@@ -904,9 +895,103 @@ namespace OpenGL{
     set_action_description(INVERSE_NORMAL, "Inverse direction of normals");
     set_action_description(SHADING_MODE, "Switch between flat/Gouraud shading display");
 
-
-
   }
+
+  glm::vec2 Basic_Viewer::canonical_mouse_coord(double x, double y) {
+    return { x / window_size.x * 2 - 1, y / window_size.y * 2 - 1 };
+  }
+
+  // mouse position mapped to the hemisphere 
+  glm::vec3 Basic_Viewer::mapping_cursor_toNDC(double x, double y) {
+    glm::vec3 v = {x, y, 0.0f};
+    v.y = -v.y;
+    double xy_squared = v.x*v.x+v.y*v.y;
+    if (xy_squared <= 1.0) { // inside the sphere
+      // x²+y²+z²=r² => z²=r²-x²-y²
+      v.z = abs(sqrt(1.0 - xy_squared));
+      return v;
+    } 
+
+    return glm::normalize(v);
+  }
+
+  glm::mat4 Basic_Viewer::get_rotation(glm::vec3 const& startVec, glm::vec3 const& endVec) {
+    glm::vec3 rotation_axis = glm::cross(startVec, endVec);
+    float angle = acos(min(1.0, (double)glm::dot(startVec, endVec)));
+
+    // std::cout << "theta angle : " << angle << std::endl;
+    return glm::rotate(glm::mat4(1.0), angle, rotation_axis);
+  }
+
+  /*********************CLIP STUFF**********************/
+
+  void Basic_Viewer::rotate_clipping_plane() {
+    Cursor mouse_current = get_cursor(); 
+
+    // we dont want current and old mouse pos to be the same 
+    // if current and old are the same we will have two identical vector 
+    // the cross product will give us a null vector
+    if (mouse_current.x == mouse_old.x && 
+        mouse_current.y == mouse_old.y) return;
+
+    glm::vec2 old_pos = canonical_mouse_coord(mouse_old.x, mouse_old.y); 
+    glm::vec3 start = mapping_cursor_toNDC(old_pos.x, old_pos.y);
+    glm::vec2 crr_pos = canonical_mouse_coord(mouse_current.x, mouse_current.y); 
+    glm::vec3 end = mapping_cursor_toNDC(crr_pos.x, crr_pos.y);
+
+    mouse_old = get_cursor();
+
+    std::cout << "start : (" << start.x << " " << start.y << " " << start.z << ")" << std::endl;
+    std::cout << "end : (" << end.x << " " << end.y << " " << end.z << ")" << std::endl;
+
+    glm::mat4 rotation = get_rotation(start, end);
+    clipping_mMatrix = rotation * clipping_mMatrix;
+  }
+
+  void Basic_Viewer::translate_clipping_plane() {
+    Cursor mouse_current = get_cursor(); 
+
+    const float d = 0.01;
+
+    glm::vec3 dir {
+      mouse_current.x - mouse_old.x, 
+      mouse_current.y - mouse_old.y,
+      0
+    };
+
+    mouse_old = get_cursor();
+
+    glm::vec3 up = {0, 1, 0};
+    glm::vec3 right = glm::normalize(-glm::cross(up, cam_forward)); 
+    up = glm::normalize(glm::cross(cam_forward, right));
+
+    glm::vec3 result = 
+      dir.x * right * d + 
+      dir.y * up * d;
+
+    clipping_mMatrix = glm::translate(clipping_mMatrix, result);  
+  }
+
+  void Basic_Viewer::cam_dir_translate_clipping_plane() {
+    const float d = 0.02;
+
+    glm::vec3 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y,
+      0
+    };
+
+    mouse_old = get_cursor();
+    
+    float trans = cursor_delta.x;
+    if (abs(cursor_delta.y) > abs(cursor_delta.x))
+      trans = -cursor_delta.y;
+
+    trans *= d;
+    clipping_mMatrix = glm::translate(clipping_mMatrix, trans*cam_forward);    
+  }
+
+  /*********************CAM STUFF**********************/
 
   void Basic_Viewer::translate(glm::vec3 dir){
     const float delta = 1.0f/60;

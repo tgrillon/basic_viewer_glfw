@@ -43,10 +43,12 @@ namespace OpenGL{
     void show();
     
   private:
+
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void cursor_callback(GLFWwindow* window, double xpos, double ypo);
     static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
     static void window_size_callback(GLFWwindow* window, int width, int height);
+    static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
   
     static GLFWwindow* create_window (int width, int height, const char *title);
     static void error_callback (int error, const char *description);
@@ -86,8 +88,12 @@ namespace OpenGL{
     void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
 
+    glm::vec2 canonical_mouse_coord(double, double);
+    glm::vec3 mapping_cursor_toNDC(double x, double y);
+    glm::mat4 get_rotation(glm::vec3 const& start, glm::vec3 const& end);
     void rotate_clipping_plane();
     void translate_clipping_plane();
+    void cam_dir_translate_clipping_plane();
 
     void zoom(float z);
     void fullscreen();
@@ -165,6 +171,8 @@ namespace OpenGL{
     CAM_MODE cam_mode = PERSPECTIVE;
     CAM_ROTATION_MODE cam_rotation_mode = CENTER;
 
+    /***************CLIPPING PLANE****************/
+
     glm::vec2 m_clipping_plane_angle_rot={0.0, 0.0};
 
     // float m_clipping_plane_angle_rot = 0.0f;
@@ -201,7 +209,7 @@ namespace OpenGL{
       CP_NEGATIVE_ROTATION, CP_POSITIVE_ROTATION, CP_ROTATION_AXIS,
       INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP, 
 
-      CP_ROTATION, CP_TRANSLATION,
+      CP_ROTATION, CP_TRANSLATION, CP_TRANS_CAM_DIR, 
 
       EXIT
     };

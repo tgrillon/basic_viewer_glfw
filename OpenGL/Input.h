@@ -53,8 +53,12 @@ private:
   std::deque<Action> key_actions;
   Cursor cursor;
 
+  double scrollDeltaY = 0;
+
 public:
   Cursor get_cursor() { return cursor; }
+
+  double get_scroll_delta_y() { return scrollDeltaY; }
 
   static std::string get_key_string(KeyData keys);
 
@@ -75,6 +79,7 @@ protected:
   void on_key_event(int key, int scancode, int action, int mods);
   void on_cursor_event(double xpos, double ypo);
   void on_mouse_btn_event(int button, int action, int mods);
+  void on_scroll_event(double xoffset, double yoffset);
   void handle_events();
 
   virtual void start_action(ActionEnum action) = 0;
@@ -216,6 +221,10 @@ void Input::on_key_event(int key, int scancode, int action, int mods){
 void Input::on_cursor_event(double xpos, double ypo) {
   cursor = Cursor(xpos, ypo);
 }
+
+void Input::on_scroll_event(double xoffset, double yoffset) {
+  scrollDeltaY += yoffset;
+} 
 
 void Input::on_mouse_btn_event(int btn, int action, int mods) {
   if (action == GLFW_PRESS) {
