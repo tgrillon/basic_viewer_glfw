@@ -887,6 +887,9 @@ namespace CGAL::OpenGL {
 
       {CLIPPING_PLANE_MODE, "Switch clipping plane display mode"},
       {CLIPPING_PLANE_DISPLAY, "Toggle clipping plane rendering on/off"},
+      {CP_ROTATION, "Rotate the clipping plane when enabled"},
+      {CP_TRANSLATION, "Translate the clipping plane when enabled"},
+      {CP_TRANS_CAM_DIR, "Translate the clipping plane along camera direction axis when enabled"},
       
       {INC_LIGHT_ALL, "Increase light (all colors, use shift/alt/ctrl for one rgb component)"},
       {DEC_LIGHT_ALL, "Decrease light (all colors, use shift/alt/ctrl for one rgb component)"},
