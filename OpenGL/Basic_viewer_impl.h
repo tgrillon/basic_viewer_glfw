@@ -862,27 +862,11 @@ namespace CGAL::OpenGL {
     add_action(GLFW_KEY_PAGE_UP, GLFW_KEY_LEFT_CONTROL, true, INC_LIGHT_B);
     add_action(GLFW_KEY_PAGE_DOWN, GLFW_KEY_LEFT_CONTROL, true, DEC_LIGHT_B);
 
-    add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_ROTATION);
-    add_mouse_action(GLFW_MOUSE_BUTTON_2, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANSLATION);
-    add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, GLFW_KEY_C, true, CP_TRANS_CAM_DIR);
+    add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, true, CP_ROTATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_2, GLFW_KEY_LEFT_CONTROL, true, CP_TRANSLATION);
+    add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, true, CP_TRANS_CAM_DIR);
     
     /*===================== BIND DESCRIPTIONS ============================*/
-    set_action_description({
-      {FORWARD, "Move forward"},
-      {BACKWARDS, "Move backwards"},
-      {UP, "Move right"},
-      {RIGHT, "Move right"},
-      {LEFT, "Move left"},
-      {DOWN, "Move down"},
-        
-      {SWITCH_CAM_MODE, "Switch to Perspective/Orthographic view"},
-      {SWITCH_CAM_ROTATION, "Switch to default/first person mode"},
-
-      {FULLSCREEN, "Switch to windowed/fullscreen mode"},
-      {SCREENSHOT, "Take a screenshot of the current view"},
-      
-      {MOUSE_ROTATE, "Rotate the view"},
-      {MOUSE_TRANSLATE, "Move the view"},
 
     set_action_description({
       {FORWARD, "Move forward"},
@@ -922,6 +906,102 @@ namespace CGAL::OpenGL {
       {EXIT, "Exits program"}
     });
   }
+
+  glm::vec2 Basic_Viewer::canonical_mouse_coord(double x, double y) {
+    return { x / window_size.x * 2 - 1, y / window_size.y * 2 - 1 };
+  }
+
+  // mouse position mapped to the hemisphere 
+  glm::vec3 Basic_Viewer::mapping_cursor_toNDC(double x, double y) {
+    glm::vec3 v = {x, y, 0.0f};
+    v.y = -v.y;
+    double xy_squared = v.x*v.x+v.y*v.y;
+    if (xy_squared <= 1.0) { // inside the sphere
+      // x²+y²+z²=r² => z²=r²-x²-y²
+      v.z = abs(sqrt(1.0 - xy_squared));
+      return v;
+    } 
+
+    return glm::normalize(v);
+  }
+
+  glm::mat4 Basic_Viewer::get_rotation(glm::vec3 const& startVec, glm::vec3 const& endVec) {
+    glm::vec3 rotation_axis = glm::cross(startVec, endVec);
+    float angle = acos(min(1.0, (double)glm::dot(startVec, endVec)));
+
+    // std::cout << "theta angle : " << angle << std::endl;
+    return glm::rotate(glm::mat4(1.0), angle, rotation_axis);
+  }
+
+  /*********************CLIP STUFF**********************/
+
+  void Basic_Viewer::rotate_clipping_plane() {
+    Cursor mouse_current = get_cursor(); 
+
+    // we dont want current and old mouse pos to be the same 
+    // if current and old are the same we will have two identical vector 
+    // the cross product will give us a null vector
+    if (mouse_current.x == mouse_old.x && 
+        mouse_current.y == mouse_old.y) return;
+
+    glm::vec2 old_pos = canonical_mouse_coord(mouse_old.x, mouse_old.y); 
+    glm::vec3 start = mapping_cursor_toNDC(old_pos.x, old_pos.y);
+    glm::vec2 crr_pos = canonical_mouse_coord(mouse_current.x, mouse_current.y); 
+    glm::vec3 end = mapping_cursor_toNDC(crr_pos.x, crr_pos.y);
+
+    mouse_old = get_cursor();
+
+    // std::cout << "start : (" << start.x << " " << start.y << " " << start.z << ")" << std::endl;
+    // std::cout << "end : (" << end.x << " " << end.y << " " << end.z << ")" << std::endl;
+
+    glm::mat4 rotation = get_rotation(start, end);
+    clipping_mMatrix = rotation * clipping_mMatrix;
+  }
+
+  void Basic_Viewer::translate_clipping_plane() {
+    Cursor mouse_current = get_cursor(); 
+
+    const float d = 0.01;
+
+    glm::vec3 dir {
+      mouse_current.x - mouse_old.x, 
+      mouse_current.y - mouse_old.y,
+      0
+    };
+
+    mouse_old = get_cursor();
+
+    glm::vec3 up = {0, 1, 0};
+    glm::vec3 right = glm::normalize(-glm::cross(up, cam_forward)); 
+    up = glm::normalize(glm::cross(cam_forward, right));
+
+    glm::vec3 result = 
+      dir.x * right * d + 
+      dir.y * up * d;
+
+    clipping_mMatrix = glm::translate(clipping_mMatrix, result);  
+  }
+
+  void Basic_Viewer::cam_dir_translate_clipping_plane() {
+    const float d = 0.02;
+
+    glm::vec3 cursor_delta {
+      get_cursor().x - mouse_old.x, 
+      get_cursor().y - mouse_old.y,
+      0
+    };
+
+    mouse_old = get_cursor();
+
+    float trans = cursor_delta.x;
+    if (abs(cursor_delta.y) > abs(cursor_delta.x))
+      trans = -cursor_delta.y;
+    
+    trans *= d;
+    clipping_mMatrix = glm::translate(clipping_mMatrix, trans*cam_forward);  
+  }
+
+  /*********************CAM STUFF**********************/
 
   void Basic_Viewer::translate(glm::vec3 dir){
     const float delta = 1.0f/60;
