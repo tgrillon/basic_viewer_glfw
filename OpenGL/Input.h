@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <queue>
@@ -10,13 +12,21 @@
 */
 
 struct KeyData {
+  static const int MOUSE_KEY_OFFSET = GLFW_KEY_LAST + 1;
+
   KeyData(){}
   KeyData(int key1, int key2, int key3, bool hold, bool mouse = false):
-    key1(key1), key2(key2), key3(key3), hold(hold), mouse(mouse) {
+    key2(key2), key3(key3), hold(hold), mouse(mouse) {
+      this->key1 = mouse ? key1 + MOUSE_KEY_OFFSET : key1;
+
       if (key1 >= 0) priority++;
       if (key2 >= 0) priority++;
       if (key3 >= 0) priority++;
     }
+
+  int get_primary_key() {
+    return mouse ? key1 - MOUSE_KEY_OFFSET : key1 ; 
+  }
 
   int key1 = -1, key2 = -1, key3 = -1;
   bool hold = false;
@@ -44,9 +54,7 @@ class Input
 public:
   using ActionEnum = int;
 private:
-  // Le bordel, pourrait être plus simple
   std::unordered_map<int, bool> pressed_keys, holding_keys, consumed_keys;
-  std::unordered_map<int, bool> mouse_pressed, mouse_hold, consumed_mouse_btn;
   std::unordered_map<ActionEnum, bool> started_actions, activated_actions;
 
   std::unordered_map<ActionEnum, std::string> action_description;
@@ -71,8 +79,10 @@ public:
   void add_mouse_action(int btn, int mod1, int mod2, bool hold, ActionEnum action);
 
   void set_action_description(ActionEnum action, std::string description);
+  void set_action_description(std::unordered_map<ActionEnum, std::string> descriptions);
+
   std::string& get_action_description(ActionEnum action);
-  std::unordered_map<ActionEnum, std::vector<KeyData>> get_action_keys();
+  std::map<ActionEnum, std::vector<KeyData>> get_action_keys();
 
 
 protected:
@@ -90,11 +100,19 @@ private:
 };
 
 std::string key_name(int key) {
-  if (key >= 290 && key <= 314) // F1-25
-    return "F" + char(key - 230);
+  std::string result = "???";
+
+  if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F25) {// F1-25
+    result = "F";
+    result += char(key - (GLFW_KEY_F1 - '1'));
+    return result;
+  }
   
-  if (key >= 320 && key <= 329) // Keypad KP1-9
-    return  "KP" + char(key - 260);
+  if (key >= GLFW_KEY_KP_0 && key <= GLFW_KEY_KP_9) {// Keypad KP1-9
+    result = "KP";
+    result += char(key - (GLFW_KEY_KP_0 - '0'));
+    return result;
+  }
 
   switch (key) {
     case GLFW_KEY_UP: return "UP";
@@ -109,7 +127,6 @@ std::string key_name(int key) {
     case GLFW_KEY_RIGHT_ALT: return "RALT";
   }
 
-  std::string result = "???";
 
   const char* name = glfwGetKeyName(key, 0);
 
@@ -136,7 +153,7 @@ std::string Input::get_key_string(KeyData keys) {
 
   if (keys.mouse) {
     result += "MB";
-    result += char(keys.key1 + 48);
+    result += char(keys.get_primary_key() + '0');
     return result;
   }
 
@@ -187,12 +204,18 @@ void Input::set_action_description(ActionEnum action, std::string description) {
   action_description[action] = description;
 }
 
+void Input::set_action_description(std::unordered_map<ActionEnum, std::string> descriptions) {
+  action_description.merge(descriptions);
+}
+
 std::string& Input::get_action_description(ActionEnum action) {
   return action_description[action];
 }
 
-std::unordered_map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
-  std::unordered_map<ActionEnum, std::vector<KeyData>> result;
+std::map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
+  // A map sorts the key by increasing value;
+  std::map<ActionEnum, std::vector<KeyData>> result;
+  
 
   for (Action act : key_actions){
     if (result.count(act.action) == 0){
@@ -227,21 +250,21 @@ void Input::on_scroll_event(double xoffset, double yoffset) {
 } 
 
 void Input::on_mouse_btn_event(int btn, int action, int mods) {
+  btn += KeyData::MOUSE_KEY_OFFSET;
+
   if (action == GLFW_PRESS) {
-    mouse_pressed[btn] = true;
-    mouse_hold[btn] = true;
+    pressed_keys[btn] = true;
+    holding_keys[btn] = true;
   }
 
   if (action == GLFW_RELEASE) {
-    mouse_hold.erase(btn);
+    holding_keys.erase(btn);
   }
 }
 
 void Input::handle_events(){
   pressed_keys.clear();
   consumed_keys.clear();
-  mouse_pressed.clear();
-  consumed_mouse_btn.clear();
   activated_actions.clear();
 
   glfwPollEvents();
@@ -250,14 +273,9 @@ void Input::handle_events(){
     KeyData k = act.keys;
     ActionEnum action = act.action;
     
-    std::unordered_map<int, bool>* key_map;
+    std::unordered_map<int, bool>& key_map = k.hold ? holding_keys : pressed_keys;
 
-    if (k.mouse) 
-      key_map = k.hold ? &mouse_hold : &mouse_pressed;
-    else 
-      key_map = k.hold ? &holding_keys : &pressed_keys;
-
-    if (!consumed_keys[k.key1] && (*key_map)[k.key1]
+    if (!consumed_keys[k.key1] && key_map[k.key1]
     && (k.key2 < 0 || holding_keys[k.key2])
     && (k.key3 < 0 || holding_keys[k.key3])){
       consumed_keys[k.key1] = true;

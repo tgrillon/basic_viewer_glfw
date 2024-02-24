@@ -1,3 +1,5 @@
+#pragma once
+
 #include <CGAL/Graphics_scene.h>
 #include <CGAL/Basic_shaders.h>
 
@@ -11,8 +13,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-namespace CGAL {
-namespace OpenGL{
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
+namespace CGAL::OpenGL {
   enum RenderMode{ // rendering mode
         DRAW_ALL=-1, // draw all
         DRAW_INSIDE_ONLY, // draw only the part inside the clipping plane
@@ -40,7 +45,9 @@ namespace OpenGL{
                     bool draw_rays = true,
                     bool draw_text = true,
                     bool draw_lines = true);    
+    
     void show();
+    void make_screenshot(const std::string& pngpath);
     
   private:
 
@@ -50,11 +57,12 @@ namespace OpenGL{
     static void window_size_callback(GLFWwindow* window, int width, int height);
     static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
   
-    static GLFWwindow* create_window (int width, int height, const char *title);
+    static GLFWwindow* create_window (int width, int height, const char *title, bool hidden = false);
     static void error_callback (int error, const char *description);
 
     void compileShaders();
     void loadBuffer(int i, int location, int gsEnum, int dataCount);
+    void loadBuffer(int i, int location, const std::vector<float>& vector, int dataCount);
     void initialiseBuffers();
 
     void updateUniforms();
@@ -63,15 +71,14 @@ namespace OpenGL{
     void setPLUniforms();
     void setClippingUniforms();
 
-    void setFaceUniforms(RenderMode rendering_mode);
-    void setPLUniforms(RenderMode rendering_mode, bool set_point_size=false);
-
-    void renderScene(float time);
+    void renderScene();
     void draw_faces();
     void draw_rays();
-    void draw_vertices();
-    void draw_edges();
     void draw_lines();
+    
+    void draw_faces_(RenderMode mode);
+    void draw_vertices(RenderMode mode);
+    void draw_edges(RenderMode mode);
 
     void generate_clipping_plane();
     void render_clipping_plane();
@@ -97,6 +104,7 @@ namespace OpenGL{
 
     void zoom(float z);
     void fullscreen();
+    void screenshot(const std::string& pngpath);
 
     void print_help();
     
@@ -189,10 +197,10 @@ namespace OpenGL{
     };
 
     enum Actions {
-      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, 
       MOUSE_ROTATE, MOUSE_TRANSLATE,
+      UP, LEFT, RIGHT, DOWN, FORWARD, BACKWARDS, 
       SWITCH_CAM_MODE, SWITCH_CAM_ROTATION,
-      FULLSCREEN,
+      FULLSCREEN, SCREENSHOT,
       INC_ZOOM, DEC_ZOOM,
       INC_MOVE_SPEED_D1, INC_MOVE_SPEED_1,
       DEC_MOVE_SPEED_D1, DEC_MOVE_SPEED_1,
@@ -241,4 +249,4 @@ namespace OpenGL{
 
     GLuint buffers[NB_GL_BUFFERS]; // +1 for the vbo buffer of clipping plane
   };
-}}
+}
