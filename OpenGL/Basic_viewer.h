@@ -95,8 +95,8 @@ namespace CGAL::OpenGL {
     void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
 
-    glm::vec2 canonical_mouse_coord(double, double);
-    glm::vec3 mapping_cursor_toNDC(double x, double y);
+    glm::vec2 to_ndc(double, double);
+    glm::vec3 mapping_cursor_toHemisphere(double x, double y);
     glm::mat4 get_rotation(glm::vec3 const& start, glm::vec3 const& end);
     void rotate_clipping_plane();
     void translate_clipping_plane();
@@ -181,19 +181,17 @@ namespace CGAL::OpenGL {
 
     /***************CLIPPING PLANE****************/
 
-    glm::vec2 m_clipping_plane_angle_rot={0.0, 0.0};
-
-    // float m_clipping_plane_angle_rot = 0.0f;
-    float m_clipping_plane_angle_step = 2.0f;
-    
-    int m_clipping_plane_rotation_axis = X_CP_AXIS;
+    int m_cstr_axis_enum = NO_AXIS;
+    glm::vec3 m_cstr_axis = {1., 0., 0.};
 
     glm::mat4 clipping_mMatrix = glm::mat4(1.0);
 
     enum {
-      X_CP_AXIS=0, 
-      Y_CP_AXIS, 
-      XY_CP_AXIS,
+      NO_AXIS=0,
+      X_AXIS, 
+      Y_AXIS, 
+      Z_AXIS,
+      NB_AXIS_ENUM
     };
 
     enum Actions {
@@ -214,10 +212,9 @@ namespace CGAL::OpenGL {
       DEC_LIGHT_ALL, DEC_LIGHT_R, DEC_LIGHT_G, DEC_LIGHT_B,
       INC_POINTS_SIZE, DEC_POINTS_SIZE,
       INC_EDGES_SIZE, DEC_EDGES_SIZE,
-      CP_NEGATIVE_ROTATION, CP_POSITIVE_ROTATION, CP_ROTATION_AXIS,
-      INC_CP_ROT_ANGLE_STEP, DEC_CP_ROT_ANGLE_STEP, 
 
       CP_ROTATION, CP_TRANSLATION, CP_TRANS_CAM_DIR, 
+      CONSTRAINT_AXIS,
 
       EXIT
     };
