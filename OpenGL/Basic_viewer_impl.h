@@ -91,10 +91,10 @@ namespace CGAL::OpenGL {
     m_inverse_normal(inverse_normal),
     m_flat_shading(true),
     
-    m_size_points(2.),
-    m_size_edges(2.),
-    m_size_rays(2.),
-    m_size_lines(2.),
+    m_size_points(7.),
+    m_size_edges(3.1),
+    m_size_rays(3.1),
+    m_size_lines(3.1),
 
     m_faces_mono_color(0.24f, 0.24f, 0.78f, 1.0f),
     m_vertices_mono_color(0.78f, 0.24f, 0.24f, 1.0f),
@@ -763,23 +763,6 @@ namespace CGAL::OpenGL {
         m_ambient.b-= 0.01;
         if (m_ambient.b < 0) m_ambient.b=0;
         break;
-      case INC_CP_ROT_ANGLE_STEP:
-        if (m_clipping_plane_angle_step < 10)
-          m_clipping_plane_angle_step += 0.1; 
-        break;
-      case DEC_CP_ROT_ANGLE_STEP:
-        if (m_clipping_plane_angle_step > 0.2)
-        m_clipping_plane_angle_step -= 0.1; 
-        break;
-      case CP_ROTATION_AXIS:
-        m_clipping_plane_rotation_axis = (m_clipping_plane_rotation_axis + 1) % 3;
-        break;
-      case CP_NEGATIVE_ROTATION:
-        m_clipping_plane_angle_rot -= m_clipping_plane_angle_step;
-        break;
-      case CP_POSITIVE_ROTATION:
-        m_clipping_plane_angle_rot += m_clipping_plane_angle_step;
-        break;
       case CP_ROTATION:
         rotate_clipping_plane();
         break;
@@ -787,9 +770,12 @@ namespace CGAL::OpenGL {
         translate_clipping_plane();
         break;
       case CP_TRANS_CAM_DIR:
-        cam_dir_translate_clipping_plane();
+        translate_clipping_plane_cam_dir();
         break;
-
+      case CONSTRAINT_AXIS:
+        m_cstr_axis_enum = (m_cstr_axis_enum+1) % NB_AXIS_ENUM;
+        switch_axis(m_cstr_axis_enum);
+        break;
     }
   }
 
@@ -863,6 +849,8 @@ namespace CGAL::OpenGL {
     add_action(GLFW_KEY_PAGE_DOWN, GLFW_KEY_LEFT_CONTROL, true, DEC_LIGHT_B);
 
     add_mouse_action(GLFW_MOUSE_BUTTON_1, GLFW_KEY_LEFT_CONTROL, true, CP_ROTATION);
+    add_action(GLFW_KEY_A, GLFW_KEY_LEFT_CONTROL, false, CONSTRAINT_AXIS);
+
     add_mouse_action(GLFW_MOUSE_BUTTON_2, GLFW_KEY_LEFT_CONTROL, true, CP_TRANSLATION);
     add_mouse_action(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_KEY_LEFT_CONTROL, true, CP_TRANS_CAM_DIR);
     
@@ -888,6 +876,7 @@ namespace CGAL::OpenGL {
       {CLIPPING_PLANE_MODE, "Switch clipping plane display mode"},
       {CLIPPING_PLANE_DISPLAY, "Toggle clipping plane rendering on/off"},
       {CP_ROTATION, "Rotate the clipping plane when enabled"},
+      {CONSTRAINT_AXIS, "Toggle constraint axis for clipping plane rotation"},
       {CP_TRANSLATION, "Translate the clipping plane when enabled"},
       {CP_TRANS_CAM_DIR, "Translate the clipping plane along camera direction axis when enabled"},
       
@@ -909,31 +898,70 @@ namespace CGAL::OpenGL {
       {EXIT, "Exits program"}
     });
   }
+  
+  void Basic_Viewer::switch_axis(int axis) {
+    if (axis == X_AXIS) {
+      std::cout << "Constrained on X" << std::endl;
+      m_cstr_axis = {1.,0.,0.};
+      return;
+    }
+    if (axis == Y_AXIS) {
+      std::cout << "Constrained on Y" << std::endl;
+      m_cstr_axis = {0.,1.,0.};
+      return;
+    }
+    if (axis == Z_AXIS) {
+      std::cout << "Constrained on Z" << std::endl;
+      m_cstr_axis = {0.,0.,1.};
+      return;
+    }
+    std::cout << "Constraint Axis Disabled" << std::endl;
+  } 
 
-  glm::vec2 Basic_Viewer::canonical_mouse_coord(double x, double y) {
+  // Normalize Device Coordinates 
+  glm::vec2 Basic_Viewer::to_ndc(double x, double y) {
     return { x / window_size.x * 2 - 1, y / window_size.y * 2 - 1 };
   }
 
   // mouse position mapped to the hemisphere 
-  glm::vec3 Basic_Viewer::mapping_cursor_toNDC(double x, double y) {
-    glm::vec3 v = {x, y, 0.0f};
-    v.y = -v.y;
-    double xy_squared = v.x*v.x+v.y*v.y;
-    if (xy_squared <= 1.0) { // inside the sphere
+  glm::vec3 Basic_Viewer::mapping_cursor_toHemisphere(double x, double y) {
+    glm::vec3 pt = {x, y, 0.};
+    float xy_squared = pt.x*pt.x+pt.y*pt.y;
+    if (xy_squared > .5) { // inside the sphere
+      pt.z = .5/sqrt(xy_squared);
+      pt = glm::normalize(pt);
+    } else {
       // x²+y²+z²=r² => z²=r²-x²-y²
-      v.z = abs(sqrt(1.0 - xy_squared));
-      return v;
+      pt.z = sqrt(1. - xy_squared);
     } 
 
-    return glm::normalize(v);
+    if (m_cstr_axis_enum == NO_AXIS) return pt;
+
+    // projection on the constraint axis 
+    float dot = glm::dot(pt, m_cstr_axis);
+    glm::vec3 proj = pt - (m_cstr_axis * dot);
+    float norm = glm::length(proj);
+
+    if (norm > 0.) {
+      float s = 1./norm;
+      if (proj.z < 0.) s = -s;
+      pt = proj * s; 
+    } else if (m_cstr_axis.z == 1.) {
+      pt = {1., 0., 0.};
+    } else {
+      pt = {-m_cstr_axis.y, m_cstr_axis.x, 0.};
+      pt = glm::normalize(pt);
+    }
+
+    return pt;
   }
 
-  glm::mat4 Basic_Viewer::get_rotation(glm::vec3 const& startVec, glm::vec3 const& endVec) {
-    glm::vec3 rotation_axis = glm::cross(startVec, endVec);
-    float angle = acos(min(1.0, (double)glm::dot(startVec, endVec)));
+  glm::mat4 Basic_Viewer::get_rotation(glm::vec3 const& start, glm::vec3 const& end) {
+    glm::vec3 rotation_axis = glm::cross(start, end);
+    float angle = acos(min(1.0, (double)glm::dot(start, end)));
 
     // std::cout << "theta angle : " << angle << std::endl;
-    return glm::rotate(glm::mat4(1.0), angle, rotation_axis);
+    return glm::rotate(glm::mat4(1.0), angle*2.f, rotation_axis);
   }
 
   /*********************CLIP STUFF**********************/
@@ -941,24 +969,25 @@ namespace CGAL::OpenGL {
   void Basic_Viewer::rotate_clipping_plane() {
     Cursor mouse_current = get_cursor(); 
 
-    // we dont want current and old mouse pos to be the same 
-    // if current and old are the same we will have two identical vector 
-    // the cross product will give us a null vector
     if (mouse_current.x == mouse_old.x && 
         mouse_current.y == mouse_old.y) return;
 
-    glm::vec2 old_pos = canonical_mouse_coord(mouse_old.x, mouse_old.y); 
-    glm::vec3 start = mapping_cursor_toNDC(old_pos.x, old_pos.y);
-    glm::vec2 crr_pos = canonical_mouse_coord(mouse_current.x, mouse_current.y); 
-    glm::vec3 end = mapping_cursor_toNDC(crr_pos.x, crr_pos.y);
+    glm::vec2 old_pos = to_ndc(mouse_old.x, mouse_old.y); 
+    glm::vec3 start = mapping_cursor_toHemisphere(old_pos.x, old_pos.y);
+
+    glm::vec2 crr_pos = to_ndc(mouse_current.x, mouse_current.y); 
+    glm::vec3 end = mapping_cursor_toHemisphere(crr_pos.x, crr_pos.y);
 
     mouse_old = get_cursor();
 
-    // std::cout << "start : (" << start.x << " " << start.y << " " << start.z << ")" << std::endl;
-    // std::cout << "end : (" << end.x << " " << end.y << " " << end.z << ")" << std::endl;
-
     glm::mat4 rotation = get_rotation(start, end);
     clipping_mMatrix = rotation * clipping_mMatrix;
+
+    // std::cout << "mvp : [" << clipping_mMatrix[0].x << ", " << clipping_mMatrix[0].y << ", " << clipping_mMatrix[0].z << ", " << clipping_mMatrix[0].w << ", \n";
+    // std::cout << "       " << clipping_mMatrix[1].x << ", " << clipping_mMatrix[1].y << ", " << clipping_mMatrix[1].z << ", " << clipping_mMatrix[1].w << ", \n";
+    // std::cout << "       " << clipping_mMatrix[2].x << ", " << clipping_mMatrix[2].y << ", " << clipping_mMatrix[2].z << ", " << clipping_mMatrix[2].w << ", \n";
+    // std::cout << "       " << clipping_mMatrix[3].x << ", " << clipping_mMatrix[3].y << ", " << clipping_mMatrix[3].z << ", " << clipping_mMatrix[3].w << "] \n";
+    // std::cout << std::endl;
   }
 
   void Basic_Viewer::translate_clipping_plane() {
@@ -982,10 +1011,11 @@ namespace CGAL::OpenGL {
       dir.x * right * d + 
       dir.y * up * d;
 
-    clipping_mMatrix = glm::translate(clipping_mMatrix, result);  
+    glm::mat4 translation = glm::translate(glm::mat4(1.), result); 
+    clipping_mMatrix = translation * clipping_mMatrix;  
   }
 
-  void Basic_Viewer::cam_dir_translate_clipping_plane() {
+  void Basic_Viewer::translate_clipping_plane_cam_dir() {
     const float d = 0.02;
 
     glm::vec3 cursor_delta {
@@ -996,12 +1026,13 @@ namespace CGAL::OpenGL {
 
     mouse_old = get_cursor();
 
-    float trans = cursor_delta.x;
+    float s = cursor_delta.x;
     if (abs(cursor_delta.y) > abs(cursor_delta.x))
-      trans = -cursor_delta.y;
+      s = -cursor_delta.y;
     
-    trans *= d;
-    clipping_mMatrix = glm::translate(clipping_mMatrix, trans*cam_forward);  
+    s *= d;
+    glm::mat4 translation = glm::translate(glm::mat4(1.), s*cam_forward); 
+    clipping_mMatrix = translation * clipping_mMatrix;  
   }
 
   /*********************CAM STUFF**********************/
