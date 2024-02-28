@@ -102,6 +102,8 @@ namespace CGAL::OpenGL {
     void translate_clipping_plane();
     void cam_dir_translate_clipping_plane();
 
+    void switch_axis(int axis);
+
     void zoom(float z);
     void fullscreen();
     void screenshot(const std::string& pngpath);
@@ -171,7 +173,7 @@ namespace CGAL::OpenGL {
     glm::vec3 cam_forward = {}, cam_look_center = {};
     float cam_orth_zoom = 1.0f;
 
-    glm::ivec2 window_size {1024, 768};
+    glm::ivec2 window_size {500, 450};
     glm::ivec2 old_window_size;
     glm::ivec2 old_window_pos;
 

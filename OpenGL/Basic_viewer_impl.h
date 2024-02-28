@@ -91,10 +91,10 @@ namespace CGAL::OpenGL {
     m_inverse_normal(inverse_normal),
     m_flat_shading(true),
     
-    m_size_points(2.),
-    m_size_edges(2.),
-    m_size_rays(2.),
-    m_size_lines(2.),
+    m_size_points(7.),
+    m_size_edges(3.1),
+    m_size_rays(3.1),
+    m_size_lines(3.1),
 
     m_faces_mono_color(0.24f, 0.24f, 0.78f, 1.0f),
     m_vertices_mono_color(0.78f, 0.24f, 0.24f, 1.0f),
@@ -774,22 +774,7 @@ namespace CGAL::OpenGL {
         break;
       case CONSTRAINT_AXIS:
         m_cstr_axis_enum = (m_cstr_axis_enum+1) % NB_AXIS_ENUM;
-        if (m_cstr_axis_enum == X_AXIS) {
-          std::cout << "Constrained on X" << std::endl;
-          m_cstr_axis = {1.,0.,0.};
-          break;
-        }
-        if (m_cstr_axis_enum == Y_AXIS) {
-          std::cout << "Constrained on Y" << std::endl;
-          m_cstr_axis = {0.,1.,0.};
-          break;
-        }
-        if (m_cstr_axis_enum == Z_AXIS) {
-          std::cout << "Constrained on Z" << std::endl;
-          m_cstr_axis = {0.,0.,1.};
-          break;
-        }
-        std::cout << "Constraint Axis Disabled" << std::endl;
+        switch_axis(m_cstr_axis_enum);
         break;
     }
   }
@@ -913,6 +898,25 @@ namespace CGAL::OpenGL {
       {EXIT, "Exits program"}
     });
   }
+  
+  void Basic_Viewer::switch_axis(int axis) {
+    if (axis == X_AXIS) {
+      std::cout << "Constrained on X" << std::endl;
+      m_cstr_axis = {1.,0.,0.};
+      return;
+    }
+    if (axis == Y_AXIS) {
+      std::cout << "Constrained on Y" << std::endl;
+      m_cstr_axis = {0.,1.,0.};
+      return;
+    }
+    if (axis == Z_AXIS) {
+      std::cout << "Constrained on Z" << std::endl;
+      m_cstr_axis = {0.,0.,1.};
+      return;
+    }
+    std::cout << "Constraint Axis Disabled" << std::endl;
+  } 
 
   // Normalize Device Coordinates 
   glm::vec2 Basic_Viewer::to_ndc(double x, double y) {
@@ -957,7 +961,7 @@ namespace CGAL::OpenGL {
     float angle = acos(min(1.0, (double)glm::dot(start, end)));
 
     // std::cout << "theta angle : " << angle << std::endl;
-    return glm::rotate(glm::mat4(1.0), angle, rotation_axis);
+    return glm::rotate(glm::mat4(1.0), angle*2.f, rotation_axis);
   }
 
   /*********************CLIP STUFF**********************/
@@ -965,9 +969,6 @@ namespace CGAL::OpenGL {
   void Basic_Viewer::rotate_clipping_plane() {
     Cursor mouse_current = get_cursor(); 
 
-    // we dont want current and old mouse pos to be the same 
-    // if current and old are the same we will have two identical vector 
-    // the cross product will give us a null vector
     if (mouse_current.x == mouse_old.x && 
         mouse_current.y == mouse_old.y) return;
 
@@ -1014,12 +1015,8 @@ namespace CGAL::OpenGL {
       dir.x * right * d + 
       dir.y * up * d;
 
-    clipping_mMatrix = glm::translate(clipping_mMatrix, result);  
-
-    // std::cout << "mvp : [" << clipping_mMatrix[0].x << ", " << clipping_mMatrix[0].y << ", " << clipping_mMatrix[0].z << clipping_mMatrix[0].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[1].x << ", " << clipping_mMatrix[1].y << ", " << clipping_mMatrix[1].z << clipping_mMatrix[1].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[2].x << ", " << clipping_mMatrix[2].y << ", " << clipping_mMatrix[2].z << clipping_mMatrix[2].w << "] \n";
-    // std::cout << std::endl;
+    glm::mat4 translation = glm::translate(glm::mat4(1.), result); 
+    clipping_mMatrix = translation * clipping_mMatrix;  
   }
 
   void Basic_Viewer::cam_dir_translate_clipping_plane() {
@@ -1033,19 +1030,13 @@ namespace CGAL::OpenGL {
 
     mouse_old = get_cursor();
 
-    float trans = cursor_delta.x;
+    float s = cursor_delta.x;
     if (abs(cursor_delta.y) > abs(cursor_delta.x))
-      trans = -cursor_delta.y;
+      s = -cursor_delta.y;
     
-    trans *= d;
-    clipping_mMatrix = glm::translate(clipping_mMatrix, trans*cam_forward);  
-
-    std::cout << "cam forward (translate cam dir): " << cam_forward.x << ", " << cam_forward.y << ", " << cam_forward.z << std::endl;
-
-    // std::cout << "mvp : [" << clipping_mMatrix[0].x << ", " << clipping_mMatrix[0].y << ", " << clipping_mMatrix[0].z << clipping_mMatrix[0].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[1].x << ", " << clipping_mMatrix[1].y << ", " << clipping_mMatrix[1].z << clipping_mMatrix[1].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[2].x << ", " << clipping_mMatrix[2].y << ", " << clipping_mMatrix[2].z << clipping_mMatrix[2].w << "] \n";
-    // std::cout << std::endl;
+    s *= d;
+    glm::mat4 translation = glm::translate(glm::mat4(1.), s*cam_forward); 
+    clipping_mMatrix = translation * clipping_mMatrix;  
   }
 
   /*********************CAM STUFF**********************/
