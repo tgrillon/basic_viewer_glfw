@@ -770,7 +770,7 @@ namespace CGAL::OpenGL {
         translate_clipping_plane();
         break;
       case CP_TRANS_CAM_DIR:
-        cam_dir_translate_clipping_plane();
+        translate_clipping_plane_cam_dir();
         break;
       case CONSTRAINT_AXIS:
         m_cstr_axis_enum = (m_cstr_axis_enum+1) % NB_AXIS_ENUM;
@@ -1007,10 +1007,6 @@ namespace CGAL::OpenGL {
     glm::vec3 right = glm::normalize(-glm::cross(up, cam_forward)); 
     up = glm::normalize(glm::cross(cam_forward, right));
 
-    std::cout << "cam forward (translate): " << cam_forward.x << ", " << cam_forward.y << ", " << cam_forward.z << std::endl;
-    std::cout << "cam right (translate): " << right.x << ", " << right.y << ", " << right.z << std::endl;
-    std::cout << "cam up (translate): " << up.x << ", " << up.y << ", " << up.z << std::endl;
-
     glm::vec3 result = 
       dir.x * right * d + 
       dir.y * up * d;
@@ -1019,7 +1015,7 @@ namespace CGAL::OpenGL {
     clipping_mMatrix = translation * clipping_mMatrix;  
   }
 
-  void Basic_Viewer::cam_dir_translate_clipping_plane() {
+  void Basic_Viewer::translate_clipping_plane_cam_dir() {
     const float d = 0.02;
 
     glm::vec3 cursor_delta {

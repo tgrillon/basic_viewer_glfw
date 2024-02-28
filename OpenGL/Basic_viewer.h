@@ -99,8 +99,10 @@ namespace CGAL::OpenGL {
     glm::vec3 mapping_cursor_toHemisphere(double x, double y);
     glm::mat4 get_rotation(glm::vec3 const& start, glm::vec3 const& end);
     void rotate_clipping_plane();
+
     void translate_clipping_plane();
-    void cam_dir_translate_clipping_plane();
+    void translate_clipping_plane_cam_dir();
+    // void translate_clipping_plane_n_dir();
 
     void switch_axis(int axis);
 
@@ -215,8 +217,9 @@ namespace CGAL::OpenGL {
       INC_POINTS_SIZE, DEC_POINTS_SIZE,
       INC_EDGES_SIZE, DEC_EDGES_SIZE,
 
-      CP_ROTATION, CP_TRANSLATION, CP_TRANS_CAM_DIR, 
-      CONSTRAINT_AXIS,
+      CP_ROTATION, CP_TRANSLATION, 
+      CP_TRANS_CAM_DIR, CP_TRANS_N_DIR, 
+      CONSTRAINT_AXIS, 
 
       EXIT
     };

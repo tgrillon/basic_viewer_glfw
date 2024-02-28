@@ -127,7 +127,6 @@ std::string key_name(int key) {
     case GLFW_KEY_RIGHT_ALT: return "RALT";
   }
 
-
   const char* name = glfwGetKeyName(key, 0);
 
   if (name != nullptr){
@@ -158,7 +157,6 @@ std::string Input::get_key_string(KeyData keys) {
   }
 
   return result + key_name(keys.key1);
-
 }
 
 void Input::add_action(int key, int mod1, int mod2, bool hold, ActionEnum action) {
@@ -216,7 +214,6 @@ std::map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
   // A map sorts the key by increasing value;
   std::map<ActionEnum, std::vector<KeyData>> result;
   
-
   for (Action act : key_actions){
     if (result.count(act.action) == 0){
       result[act.action] = {act.keys};
@@ -228,7 +225,6 @@ std::map<Input::ActionEnum, std::vector<KeyData>> Input::get_action_keys() {
 
   return result;
 }
-
 
 void Input::on_key_event(int key, int scancode, int action, int mods){
   if (action == GLFW_PRESS) {
