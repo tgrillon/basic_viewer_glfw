@@ -91,28 +91,33 @@ namespace CGAL::GLFW {
     m_inverse_normal(inverse_normal),
     m_flat_shading(true),
     
-    m_size_points(7.),
-    m_size_edges(3.1),
-    m_size_rays(3.1),
-    m_size_lines(3.1),
+    m_size_points(SIZE_POINTS),
+    m_size_edges(SIZE_EDGES),
+    m_size_rays(SIZE_RAYS),
+    m_size_lines(SIZE_LINES),
 
-    m_faces_mono_color(0.24f, 0.24f, 0.78f, 1.0f),
-    m_vertices_mono_color(0.78f, 0.24f, 0.24f, 1.0f),
-    m_edges_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
-    m_rays_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
-    m_lines_mono_color(0.0f, 0.0f, 0.0f, 1.0f),
+    m_faces_mono_color(FACES_MONO_COLOR),
+    m_vertices_mono_color(VERTICES_MONO_COLOR),
+    m_edges_mono_color(EDGES_MONO_COLOR),
+    m_rays_mono_color(RAYS_MONO_COLOR),
+    m_lines_mono_color(LINES_MONO_COLOR),
 
-    m_light_position(0, 0, 0, 0),
-    m_ambient(0.6f, 0.5f, 0.5f, 1.f),
-    m_shininess(0.5f),
-    m_diffuse(0.9f, 0.9f, 0.9f, 1.0f),
-    m_specular(0.0f, 0.0f, 0.0f, 1.0f),
+    m_light_position(LIGHT_POSITION),
+    m_ambient(AMBIENT_COLOR),
+    m_diffuse(DIFFUSE_COLOR),
+    m_specular(SPECULAR_COLOR),
+
+    m_shininess(SHININESS),
 
     point_plane(0, 0, 0, 1),
     clip_plane(0, 0, 1, 0),
 
-    cam_speed(0.2f),
-    cam_rot_speed(0.05f),
+    cam_speed(CAM_MOVE_SPEED),
+    cam_rot_speed(CAM_ROT_SPEED),
+
+    m_clipping_plane_rendering_transparency(CLIPPING_PLANE_RENDERING_TRANSPARENCY), 
+    m_clipping_plane_rendering(true),
+    m_use_clipping_plane(CLIPPING_PLANE_OFF),
 
     m_are_buffers_initialized(false),
     m_is_opengl_4_3(false)
@@ -367,7 +372,13 @@ namespace CGAL::GLFW {
     if (m_draw_lines)     { draw_lines(); }
   }
 
-  void Basic_Viewer::draw_faces() {
+  glm::vec4 Basic_Viewer::color_to_vec4(const CGAL::IO::Color& c) const
+  {
+    return { (float)c.red()/255, (float)c.green()/255, (float)c.blue()/255, 1.0f };
+  }
+
+  void Basic_Viewer::draw_faces() 
+  {
     face_shader.use();
 
     if (m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF) {
@@ -415,17 +426,18 @@ namespace CGAL::GLFW {
   void Basic_Viewer::draw_faces_(RenderMode mode){
     face_shader.use();
     face_shader.setFloat("rendering_mode", mode);
-    
+
+    glm::vec4 color = color_to_vec4(m_faces_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_FACES]);
-    glVertexAttrib4fv(2, glm::value_ptr(m_faces_mono_color));
+    glVertexAttrib4fv(2, glm::value_ptr(color));
     glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_FACES));
   
     glBindVertexArray(m_vao[VAO_COLORED_FACES]);
 
     if (m_use_mono_color) {
       glDisableVertexAttribArray(2);
-      glVertexAttrib4fv(2, glm::value_ptr(m_faces_mono_color));
+      glVertexAttrib4fv(2, glm::value_ptr(color));
     } else {
       glEnableVertexAttribArray(2);
     }
@@ -437,8 +449,10 @@ namespace CGAL::GLFW {
     pl_shader.use();
     pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
+    glm::vec4 color = color_to_vec4(m_rays_mono_color);    
+
     glBindVertexArray(m_vao[VAO_MONO_RAYS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_rays_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(color));
 
     glLineWidth(m_size_rays);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_RAYS));
@@ -446,7 +460,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_COLORED_RAYS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(m_rays_mono_color));
+      glVertexAttrib4fv(1, glm::value_ptr(color));
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -457,15 +471,16 @@ namespace CGAL::GLFW {
     pl_shader.use();
     pl_shader.setFloat("rendering_mode", render);
     
+    glm::vec4 color = color_to_vec4(m_vertices_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_POINTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_vertices_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(color));
     glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_POINTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_POINTS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(m_vertices_mono_color));
+      glVertexAttrib4fv(1, glm::value_ptr(color));
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -477,8 +492,10 @@ namespace CGAL::GLFW {
     pl_shader.use();
     pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
+    glm::vec4 color = color_to_vec4(m_lines_mono_color);    
+    
     glBindVertexArray(m_vao[VAO_MONO_LINES]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_lines_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(color));
     glLineWidth(m_size_lines);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_LINES));
   
@@ -486,7 +503,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_COLORED_LINES]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(m_lines_mono_color));
+      glVertexAttrib4fv(1, glm::value_ptr(color));
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -495,18 +512,19 @@ namespace CGAL::GLFW {
 
   void Basic_Viewer::draw_edges(RenderMode mode) {
     pl_shader.use();
-
     pl_shader.setFloat("rendering_mode", mode);
           
+    glm::vec4 color = color_to_vec4(m_edges_mono_color);    
+
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(m_edges_mono_color));
+    glVertexAttrib4fv(1, glm::value_ptr(color));
     glLineWidth(m_size_edges);
     glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(m_edges_mono_color));
+      glVertexAttrib4fv(1, glm::value_ptr(color));
     } else {
       glEnableVertexAttribArray(1);
     }
