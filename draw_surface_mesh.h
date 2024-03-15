@@ -94,7 +94,7 @@ void add_to_graphics_scene(const SM& sm,
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/draw_face_graph.h>
 
-#include "OpenGL/Basic_viewer_impl.h"
+#include "GLFW/Basic_viewer_impl.h"
 
 namespace CGAL {
 
@@ -174,7 +174,7 @@ void draw(const Surface_mesh<K>& amesh,
 {
   CGAL::Graphics_scene buffer;
   add_to_graphics_scene(amesh, buffer);
-  CGAL::OpenGL::draw_graphics_scene(buffer, title);
+  CGAL::GLFW::draw_graphics_scene(buffer, title);
 }
 
 template<class K, class GSOptions>
@@ -184,7 +184,7 @@ void draw(const Surface_mesh<K>& amesh,
 {
   CGAL::Graphics_scene buffer;
   add_to_graphics_scene(amesh, buffer, gs_options);
-  CGAL::OpenGL::draw_graphics_scene(buffer, title);
+  CGAL::GLFW::draw_graphics_scene(buffer, title);
 }
 
 

@@ -2,28 +2,28 @@
 # This is the CMake script for compiling a CGAL application.
 
 cmake_minimum_required(VERSION 3.1...3.23)
-project(OpenGL)
+project(GLFW)
 
 find_package(CGAL REQUIRED COMPONENTS Core)
 find_package(Eigen3 3.1.0)
 include(CGAL_Eigen3_support)
 
-add_subdirectory (vendor/glfw)
-add_subdirectory (vendor/glm)
+add_subdirectory (GLFW/vendor/glfw)
+add_subdirectory (GLFW/vendor/glm)
 
 include_directories (
     .
-    vendor/glfw/deps/
-    vendor/glfw/include/
-    vendor/glad/include/
-    vendor/glm/
-    vendor/stb/
+    GLFW/vendor/glfw/deps/
+    GLFW/vendor/glfw/include/
+    GLFW/vendor/glad/include/
+    GLFW/vendor/glm/
+    GLFW/vendor/stb/
 
     ${CGAL_DIR}/Basic_viewer/include/ # TEMPO
 )
 
 
-file (GLOB         VENDORS_SOURCES vendor/glad/src/glad.c)
+file (GLOB         VENDORS_SOURCES GLFW/vendor/glad/src/glad.c)
 
 file (GLOB_RECURSE PROJECT_HEADERS *.hpp
                                    *.h)
