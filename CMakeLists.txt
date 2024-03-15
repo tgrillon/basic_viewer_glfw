@@ -2,7 +2,7 @@
 # This is the CMake script for compiling a CGAL application.
 
 cmake_minimum_required(VERSION 3.1...3.23)
-project(GLFW)
+project(GLFW_Basicv)
 
 find_package(CGAL REQUIRED COMPONENTS Core)
 find_package(Eigen3 3.1.0)

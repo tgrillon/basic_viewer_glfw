@@ -170,6 +170,7 @@ namespace CGAL::GLFW {
     inline const CGAL::IO::Color& faces_mono_color()    const { return m_faces_mono_color; }
 
     inline bool clipping_plane_enable() const { return m_use_clipping_plane!=CLIPPING_PLANE_OFF; }
+    inline bool is_orthograpic() const { return cam_mode == ORTHOGRAPHIC; } 
 
   private:
     GLFWwindow *m_window;

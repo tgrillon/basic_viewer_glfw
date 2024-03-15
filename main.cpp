@@ -1,10 +1,11 @@
 // System headers
 #include <CGAL/Graphics_scene.h>
-#include "OpenGL/Basic_viewer_impl.h"
 #include <CGAL/Point_3.h>
 #include <CGAL/Vector_3.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/IO/Color.h>
+
+#include "GLFW/Basic_viewer_impl.h"
 // Standard headers
 #include <cstdlib>
 
@@ -79,7 +80,7 @@ int main(int argc, char* argb[])
 
     scene.add_segment(Point(0.5f,0.5f,1), Point(0.5,-0.5f,1), CGAL::Color(0, 0, 255));
 
-    CGAL::OpenGL::draw_graphics_scene(scene, "Test opengl");
+    CGAL::GLFW::draw_graphics_scene(scene, "Test opengl");
 
     return EXIT_SUCCESS;
 }
