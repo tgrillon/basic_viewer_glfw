@@ -149,11 +149,11 @@ namespace CGAL::GLFW {
         m_is_opengl_4_3 = true;
       }
 
-      compileShaders();
+      compile_shaders();
 
       while (!glfwWindowShouldClose(m_window))
       {
-        renderScene();
+        render_scene();
         glfwSwapBuffers(m_window);
         handle_events();
       }
@@ -173,14 +173,14 @@ namespace CGAL::GLFW {
         m_is_opengl_4_3 = true;
       }
 
-      compileShaders();
-      renderScene();
+      compile_shaders();
+      render_scene();
       glfwSwapBuffers(m_window);
       screenshot(pngpath);
       glfwTerminate();
     }
 
-  void Basic_Viewer::compileShaders() { 
+  void Basic_Viewer::compile_shaders() { 
     const char* face_vert = m_is_opengl_4_3 ? vertex_source_color : vertex_source_color_comp;
     const char* face_frag = m_is_opengl_4_3 ? fragment_source_color : fragment_source_color_comp;
     const char* pl_vert = m_is_opengl_4_3 ? vertex_source_p_l : vertex_source_p_l_comp;
@@ -194,7 +194,7 @@ namespace CGAL::GLFW {
     plane_shader = Shader::loadShader(plane_vert, plane_frag, "PLANE");
   }
 
-  void Basic_Viewer::loadBuffer(int i, int location, const std::vector<float>& vector, int dataCount){ 
+  void Basic_Viewer::load_buffer(int i, int location, const std::vector<float>& vector, int dataCount){
     glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
 
     glBufferData(GL_ARRAY_BUFFER, vector.size() * sizeof(float), vector.data(), GL_STATIC_DRAW);
@@ -205,12 +205,12 @@ namespace CGAL::GLFW {
   }
 
 
-  void Basic_Viewer::loadBuffer(int i, int location, int gsEnum, int dataCount){ 
+  void Basic_Viewer::load_buffer(int i, int location, int gsEnum, int dataCount){ 
     const std::vector<float>& vector = m_scene.get_array_of_index(gsEnum);
-    loadBuffer(i, location, vector, dataCount);
+    load_buffer(i, location, vector, dataCount);
   }
 
-  void Basic_Viewer::initialiseBuffers()
+  void Basic_Viewer::init_buffers()
   {
     // TODO faire qu'une seule fois: 
     glGenBuffers(NB_GL_BUFFERS, buffers);
@@ -224,80 +224,80 @@ namespace CGAL::GLFW {
     // 1.1) Mono points
     pl_shader.use();
     glBindVertexArray(m_vao[VAO_MONO_POINTS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_POINTS, 3);
+    load_buffer(bufn++, 0, Graphics_scene::POS_MONO_POINTS, 3);
 
     // 1.2) Color points
     glBindVertexArray(m_vao[VAO_COLORED_POINTS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_COLORED_POINTS, 3);      
-    loadBuffer(bufn++, 1, Graphics_scene::COLOR_POINTS, 3);      
+    load_buffer(bufn++, 0, Graphics_scene::POS_COLORED_POINTS, 3);      
+    load_buffer(bufn++, 1, Graphics_scene::COLOR_POINTS, 3);      
 
     // 2) SEGMENT SHADER
 
     // 2.1) Mono segments
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_SEGMENTS, 3);      
+    load_buffer(bufn++, 0, Graphics_scene::POS_MONO_SEGMENTS, 3);      
 
     // 2.2) Colored segments
     glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_COLORED_SEGMENTS, 3);      
-    loadBuffer(bufn++, 1, Graphics_scene::COLOR_SEGMENTS, 3);   
+    load_buffer(bufn++, 0, Graphics_scene::POS_COLORED_SEGMENTS, 3);      
+    load_buffer(bufn++, 1, Graphics_scene::COLOR_SEGMENTS, 3);   
 
     // 3) RAYS SHADER
 
     // 2.1) Mono segments
     glBindVertexArray(m_vao[VAO_MONO_RAYS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_RAYS, 3);      
+    load_buffer(bufn++, 0, Graphics_scene::POS_MONO_RAYS, 3);      
 
     // 2.2) Colored segments
     glBindVertexArray(m_vao[VAO_COLORED_RAYS]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_COLORED_RAYS, 3);      
-    loadBuffer(bufn++, 1, Graphics_scene::COLOR_RAYS, 3);   
+    load_buffer(bufn++, 0, Graphics_scene::POS_COLORED_RAYS, 3);      
+    load_buffer(bufn++, 1, Graphics_scene::COLOR_RAYS, 3);   
   
     // 4) LINES SHADER
 
     // 2.1) Mono lines
     glBindVertexArray(m_vao[VAO_MONO_LINES]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_LINES, 3);      
+    load_buffer(bufn++, 0, Graphics_scene::POS_MONO_LINES, 3);      
 
     // 2.2) Colored lines
     glBindVertexArray(m_vao[VAO_COLORED_LINES]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_COLORED_LINES, 3);      
-    loadBuffer(bufn++, 1, Graphics_scene::COLOR_LINES, 3);   
+    load_buffer(bufn++, 0, Graphics_scene::POS_COLORED_LINES, 3);      
+    load_buffer(bufn++, 1, Graphics_scene::COLOR_LINES, 3);   
 
     // 5) FACE SHADER
 
     // 5.1) Mono faces
     face_shader.use();
     glBindVertexArray(m_vao[VAO_MONO_FACES]);
-    loadBuffer(bufn++, 0, Graphics_scene::POS_MONO_FACES, 3);
+    load_buffer(bufn++, 0, Graphics_scene::POS_MONO_FACES, 3);
     if (m_flat_shading) {
-      loadBuffer(bufn++, 1, Graphics_scene::FLAT_NORMAL_MONO_FACES, 3);
+      load_buffer(bufn++, 1, Graphics_scene::FLAT_NORMAL_MONO_FACES, 3);
     } else {
-      loadBuffer(bufn++, 1, Graphics_scene::SMOOTH_NORMAL_MONO_FACES, 3);
+      load_buffer(bufn++, 1, Graphics_scene::SMOOTH_NORMAL_MONO_FACES, 3);
     }
 
     // 5.2) Colored faces
     glBindVertexArray(m_vao[VAO_COLORED_FACES]); 
-    loadBuffer(bufn++, 0, Graphics_scene::POS_COLORED_FACES, 3);
+    load_buffer(bufn++, 0, Graphics_scene::POS_COLORED_FACES, 3);
     if (m_flat_shading) {
-      loadBuffer(bufn++, 1, Graphics_scene::FLAT_NORMAL_COLORED_FACES, 3);
+      load_buffer(bufn++, 1, Graphics_scene::FLAT_NORMAL_COLORED_FACES, 3);
     } else {
-      loadBuffer(bufn++, 1, Graphics_scene::SMOOTH_NORMAL_COLORED_FACES, 3);
+      load_buffer(bufn++, 1, Graphics_scene::SMOOTH_NORMAL_COLORED_FACES, 3);
     }
-    loadBuffer(bufn++, 2, Graphics_scene::COLOR_FACES, 3);
+    load_buffer(bufn++, 2, Graphics_scene::COLOR_FACES, 3);
 
     // 6) clipping plane shader
     if (m_is_opengl_4_3) {
       generate_clipping_plane();
       glBindVertexArray(m_vao[VAO_CLIPPING_PLANE]);
-      loadBuffer(bufn++, 0, m_array_for_clipping_plane, 3);
+      load_buffer(bufn++, 0, m_array_for_clipping_plane, 3);
     }
 
     m_are_buffers_initialized = true;
   }
 
-  void Basic_Viewer::updateUniforms(){
-    modelView = cam_rotation_mode == WALK ?
+  void Basic_Viewer::update_uniforms(){
+    modelView = cam_rotation_mode == FREE ?
       glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0))
       :
       glm::lookAt(cam_position, cam_look_center, glm::vec3(0,1,0));
@@ -306,12 +306,12 @@ namespace CGAL::GLFW {
 
     // ================================================================
 
-    setFaceUniforms();
-    setPLUniforms();
-    setClippingUniforms();
+    set_face_uniforms();
+    set_pl_uniforms();
+    set_clipping_uniforms();
   }
 
-  void Basic_Viewer::setFaceUniforms() {
+  void Basic_Viewer::set_face_uniforms() {
     face_shader.use();
 
     face_shader.setMatrix4f("mvp_matrix", glm::value_ptr(modelViewProjection));
@@ -329,7 +329,7 @@ namespace CGAL::GLFW {
     face_shader.setFloat("rendering_transparency", m_clipping_plane_rendering_transparency);
   }
 
-  void Basic_Viewer::setPLUniforms() {
+  void Basic_Viewer::set_pl_uniforms() {
     pl_shader.use();
     
     pl_shader.setVec4f("clipPlane", glm::value_ptr(clip_plane));
@@ -338,7 +338,7 @@ namespace CGAL::GLFW {
     pl_shader.setFloat("point_size", m_size_points);
   }
 
-  void Basic_Viewer::setClippingUniforms() {
+  void Basic_Viewer::set_clipping_uniforms() {
     point_plane = clipping_mMatrix * glm::vec4(0, 0, 0, 1);
     clip_plane = clipping_mMatrix * glm::vec4(0, 0, 1, 0);
     plane_shader.use();
@@ -347,9 +347,9 @@ namespace CGAL::GLFW {
     plane_shader.setMatrix4f("m_matrix", glm::value_ptr(clipping_mMatrix));
   }
   
-  void Basic_Viewer::renderScene()
+  void Basic_Viewer::render_scene()
   {
-    if(!m_are_buffers_initialized) { initialiseBuffers(); }
+    if(!m_are_buffers_initialized) { init_buffers(); }
     
     glClearColor(1.0f,1.0f,1.0f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -357,7 +357,7 @@ namespace CGAL::GLFW {
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_LINE_SMOOTH);
     
-    updateUniforms();
+    update_uniforms();
 
     bool half = m_use_clipping_plane == CLIPPING_PLANE_SOLID_HALF_ONLY;
     
@@ -671,6 +671,7 @@ namespace CGAL::GLFW {
         break;
       case DEC_ZOOM:
         zoom(-1.0f);
+        break;
       case INC_MOVE_SPEED_D1:
         cam_speed += 0.1f;
         break;
@@ -1086,7 +1087,7 @@ namespace CGAL::GLFW {
     };
 
 
-    if (cam_rotation_mode == WALK){
+    if (cam_rotation_mode == FREE){
       dir.y = -dir.y;
       cam_forward = dir;
       return;
@@ -1112,7 +1113,7 @@ namespace CGAL::GLFW {
 
   void Basic_Viewer::switch_rotation_mode() {
     if (cam_rotation_mode == CENTER){
-      cam_rotation_mode = WALK;
+      cam_rotation_mode = FREE;
       cam_view.x += 180;
 
       return;
@@ -1122,7 +1123,7 @@ namespace CGAL::GLFW {
     
     glm::vec3 camToCenter = glm::normalize(cam_look_center - cam_position);
     cam_forward = camToCenter;
-    cam_rotation_mode = cam_rotation_mode == WALK ? CENTER : WALK;
+    cam_rotation_mode = cam_rotation_mode == FREE ? CENTER : FREE;
   }
 
   void Basic_Viewer::fullscreen(){
@@ -1170,7 +1171,7 @@ namespace CGAL::GLFW {
     std::cout << std::endl << "Help for Basic Viewer OpenGl :" << std::endl;
 
     for (auto pair : action_keys){
-      std::vector<KeyData> keys = pair.second;
+      std::vector<KeyData> shortcuts = pair.second;
       ActionEnum action = pair.first;
 
       std::string line;
@@ -1180,19 +1181,23 @@ namespace CGAL::GLFW {
       if (action_str.empty()) action_str = "No description found";
         
       line += "   " + action_str;
+      
 
-      if (keys.size() > 1) {
-        line += " (Alternatives : " + get_key_string(keys[1]);
+      if (shortcuts.size() > 1) {
+        line += " (Alternatives : ";
+        
+        line += get_key_string(shortcuts[1]) + " ";
 
-        if (keys.size() > 2)
-          line += ", " + get_key_string(keys[2]);
+        for (int s = 2; s < shortcuts.size(); s++) {
+            line += ", " + get_key_string(shortcuts[s]);
+        }
 
         line += ").";
       }
 
       std::cout
         << std::setw(12)
-        << (keys.size() > 0 ? get_key_string(keys[0]) : "(unbound)")
+        << (shortcuts.size() > 0 ? get_key_string(shortcuts[0]) : "(unbound)")
         << line
         << std::setw(0) 
         << std::endl;

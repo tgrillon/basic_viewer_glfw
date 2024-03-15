@@ -5,7 +5,7 @@
 #include <CGAL/draw_polyhedron.h>
 #include <CGAL/draw_point_set_3.h>
 #include <CGAL/Graphics_scene_options.h>
-#include "OpenGL/Basic_viewer_impl.h"
+#include "GLFW/Basic_viewer_impl.h"
 
 #include <vector>
 #include <iostream>
@@ -51,7 +51,6 @@ int main(int argc, char** argv)
 
   double average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
     (points, 6, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
-    std::cout << "aaaaaaaaa"; 
 
   if (CGAL::poisson_surface_reconstruction_delaunay
       (points.begin(), points.end(),
@@ -66,7 +65,7 @@ int main(int argc, char** argv)
     CGAL::Graphics_scene scene;
     CGAL::add_to_graphics_scene(point_set, scene, Graphics_scene_options_green_points());
     CGAL::add_to_graphics_scene(output_mesh, scene);
-    CGAL::OpenGL::draw_graphics_scene(scene);
+    CGAL::GLFW::draw_graphics_scene(scene);
   }
   else
   {

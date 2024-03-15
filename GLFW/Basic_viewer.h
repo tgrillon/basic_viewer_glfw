@@ -40,7 +40,7 @@ namespace CGAL::GLFW {
       };
   
   enum CAM_MODE { PERSPECTIVE, ORTHOGRAPHIC };
-  enum CAM_ROTATION_MODE { CENTER, WALK };
+  enum CAM_ROTATION_MODE { CENTER, FREE };
 
   const int windowSamples = WINDOW_SAMPLES;
 
@@ -51,7 +51,7 @@ namespace CGAL::GLFW {
   class Basic_Viewer : public Input {
   public:
     Basic_Viewer(const Graphics_scene &graphics_scene,
-                    const char *title,
+                    const char *title = "",
                     bool draw_vertices = true,
                     bool draw_edges = true,
                     bool draw_faces = true,
@@ -63,9 +63,56 @@ namespace CGAL::GLFW {
     
     void show();
     void make_screenshot(const std::string& pngpath);
+
+    /***** Getter & Setter ****/
+
+    // TODO -> impl
+    inline void position(const glm::vec3 pos) { cam_position = pos; }
+    inline void forward(const glm::vec3 dir) { cam_forward = dir; }
+    // TODO set cam rotation mode 
+
+    inline void draw_vertices(bool b) { m_draw_vertices = b; }
+    inline void draw_edges(bool b) { m_draw_edges = b; }
+    inline void draw_rays(bool b) { m_draw_rays = b; }
+    inline void draw_lines(bool b) { m_draw_lines = b; }
+    inline void draw_faces(bool b) { m_draw_faces = b; }
+    inline void use_mono_color(bool b) { m_use_mono_color = b; }
+    inline void inverse_normal(bool b) { m_inverse_normal = b; }
+    inline void flat_shading(bool b) { m_flat_shading = b; }
+
+    inline void vertices_mono_color(const CGAL::IO::Color& c) { m_vertices_mono_color = c; }
+    inline void edges_mono_color(const CGAL::IO::Color& c) { m_edges_mono_color = c; }
+    inline void rays_mono_color(const CGAL::IO::Color& c) { m_rays_mono_color = c; }
+    inline void lines_mono_color(const CGAL::IO::Color& c) { m_lines_mono_color = c; }
+    inline void faces_mono_color(const CGAL::IO::Color& c) { m_faces_mono_color = c; }
+
+    inline void toggle_draw_vertices() { m_draw_vertices != m_draw_vertices; }
+    inline void toggle_draw_edges() { m_draw_edges != m_draw_edges; }
+    inline void toggle_draw_rays() { m_draw_rays != m_draw_rays; }
+    inline void toggle_draw_lines() { m_draw_lines != m_draw_lines; }
+    inline void toggle_draw_faces() { m_draw_faces != m_draw_faces; }
+    inline void toggle_use_mono_color() { m_use_mono_color != m_use_mono_color; }
+    inline void toggle_inverse_normal() { m_inverse_normal != m_inverse_normal; }
+
+    inline bool draw_vertices()  const { return m_draw_vertices; }
+    inline bool draw_edges()     const { return m_draw_edges; }
+    inline bool draw_rays()      const { return m_draw_rays; }
+    inline bool draw_lines()     const { return m_draw_lines; }
+    inline bool draw_faces()     const { return m_draw_faces; }
+    inline bool use_mono_color() const { return m_use_mono_color; }
+    inline bool inverse_normal() const { return m_inverse_normal; }
+    inline bool flat_shading()   const { return m_flat_shading; }
+
+    inline const CGAL::IO::Color& vertices_mono_color() const { return m_vertices_mono_color; }
+    inline const CGAL::IO::Color& edges_mono_color()    const { return m_edges_mono_color; }
+    inline const CGAL::IO::Color& rays_mono_color()     const { return m_rays_mono_color; }
+    inline const CGAL::IO::Color& lines_mono_color()    const { return m_lines_mono_color; }
+    inline const CGAL::IO::Color& faces_mono_color()    const { return m_faces_mono_color; }
+
+    inline bool clipping_plane_enable() const { return m_use_clipping_plane != CLIPPING_PLANE_OFF; }
+    inline bool is_orthograpic() const { return cam_mode == ORTHOGRAPHIC; }
     
   private:
-
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void cursor_callback(GLFWwindow* window, double xpos, double ypo);
     static void mouse_btn_callback(GLFWwindow* window, int button, int action, int mods);
@@ -75,18 +122,18 @@ namespace CGAL::GLFW {
     static GLFWwindow* create_window (int width, int height, const char *title, bool hidden = false);
     static void error_callback (int error, const char *description);
 
-    void compileShaders();
-    void loadBuffer(int i, int location, int gsEnum, int dataCount);
-    void loadBuffer(int i, int location, const std::vector<float>& vector, int dataCount);
-    void initialiseBuffers();
+    void compile_shaders();
+    void load_buffer(int i, int location, int gsEnum, int dataCount);
+    void load_buffer(int i, int location, const std::vector<float>& vector, int dataCount);
+    void init_buffers();
 
-    void updateUniforms();
+    void update_uniforms();
 
-    void setFaceUniforms();
-    void setPLUniforms();
-    void setClippingUniforms();
+    void set_face_uniforms();
+    void set_pl_uniforms();
+    void set_clipping_uniforms();
 
-    void renderScene();
+    void render_scene();
     void draw_faces();
     void draw_rays();
     void draw_lines();
@@ -128,49 +175,6 @@ namespace CGAL::GLFW {
     void print_help();
 
     glm::vec4 color_to_vec4(const CGAL::IO::Color& c) const;
-
-    /***** Getter & Setter ****/
-
-    inline void draw_vertices(bool b)  { m_draw_vertices = b; }
-    inline void draw_edges(bool b)     { m_draw_edges = b; }
-    inline void draw_rays(bool b)      { m_draw_rays = b; }
-    inline void draw_lines(bool b)     { m_draw_lines = b; }
-    inline void draw_faces(bool b)     { m_draw_faces = b; }
-    inline void use_mono_color(bool b) { m_use_mono_color = b; }
-    inline void inverse_normal(bool b) { m_inverse_normal = b; }
-    inline void flat_shading(bool b) { m_flat_shading = b; }
-
-    inline void vertices_mono_color(const CGAL::IO::Color& c) { m_vertices_mono_color = c; }
-    inline void edges_mono_color(const CGAL::IO::Color& c)    { m_edges_mono_color = c; }
-    inline void rays_mono_color(const CGAL::IO::Color& c)     { m_rays_mono_color = c; }
-    inline void lines_mono_color(const CGAL::IO::Color& c)    { m_lines_mono_color = c; }
-    inline void faces_mono_color(const CGAL::IO::Color& c)    { m_faces_mono_color = c; }
-
-    inline void toggle_draw_vertices()  { m_draw_vertices != m_draw_vertices; }
-    inline void toggle_draw_edges()     { m_draw_edges != m_draw_edges; }
-    inline void toggle_draw_rays()      { m_draw_rays != m_draw_rays; }
-    inline void toggle_draw_lines()     { m_draw_lines != m_draw_lines; }
-    inline void toggle_draw_faces()     { m_draw_faces != m_draw_faces; }
-    inline void toggle_use_mono_color() { m_use_mono_color != m_use_mono_color; }
-    inline void toggle_inverse_normal() { m_inverse_normal != m_inverse_normal; }
-
-    inline bool draw_vertices()  const { return m_draw_vertices; }
-    inline bool draw_edges()     const { return m_draw_edges; }
-    inline bool draw_rays()      const { return m_draw_rays; }
-    inline bool draw_lines()     const { return m_draw_lines; }
-    inline bool draw_faces()     const { return m_draw_faces; }
-    inline bool use_mono_color() const { return m_use_mono_color; }
-    inline bool inverse_normal() const { return m_inverse_normal; }
-    inline bool flat_shading()   const { return m_flat_shading; }
-    
-    inline const CGAL::IO::Color& vertices_mono_color() const { return m_vertices_mono_color; }
-    inline const CGAL::IO::Color& edges_mono_color()    const { return m_edges_mono_color; }
-    inline const CGAL::IO::Color& rays_mono_color()     const { return m_rays_mono_color; }
-    inline const CGAL::IO::Color& lines_mono_color()    const { return m_lines_mono_color; }
-    inline const CGAL::IO::Color& faces_mono_color()    const { return m_faces_mono_color; }
-
-    inline bool clipping_plane_enable() const { return m_use_clipping_plane!=CLIPPING_PLANE_OFF; }
-    inline bool is_orthograpic() const { return cam_mode == ORTHOGRAPHIC; } 
 
   private:
     GLFWwindow *m_window;
