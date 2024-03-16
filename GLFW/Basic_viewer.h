@@ -61,7 +61,7 @@ namespace CGAL::GLFW {
 
   class Basic_Viewer : public Input {
   public:
-    Basic_Viewer(const Graphics_scene &graphics_scene,
+    Basic_Viewer(const Graphics_scene* graphics_scene,
                     const char *title = "",
                     bool draw_vertices = true,
                     bool draw_edges = true,
@@ -79,6 +79,10 @@ namespace CGAL::GLFW {
 
     inline void position(const glm::vec3 pos) { cam_position = pos; }
     inline void forward(const glm::vec3 dir) { cam_forward = dir; }
+    inline void set_scene(const Graphics_scene* scene) { 
+      m_scene = scene;
+      m_is_scene_loaded = false;
+    }
 
     // TODO manipuler clip plane via code 
 
@@ -137,6 +141,7 @@ namespace CGAL::GLFW {
     void load_buffer(int i, int location, int gsEnum, int dataCount);
     void load_buffer(int i, int location, const std::vector<float>& vector, int dataCount);
     void init_buffers();
+    void load_scene();
 
     void update_uniforms();
 
@@ -189,7 +194,7 @@ namespace CGAL::GLFW {
 
   private:
     GLFWwindow *m_window;
-    const Graphics_scene &m_scene;
+    const Graphics_scene *m_scene;
     const char *m_title;
     bool m_draw_vertices;
     bool m_draw_edges;
@@ -198,6 +203,7 @@ namespace CGAL::GLFW {
     bool m_draw_faces;
     bool m_draw_text;
     bool m_are_buffers_initialized = false;
+    bool m_is_scene_loaded = false;
     bool m_flat_shading = true;
     bool m_use_mono_color;
     bool m_inverse_normal;

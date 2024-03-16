@@ -69,7 +69,7 @@ namespace CGAL::GLFW {
   }
 
 
-  Basic_Viewer::Basic_Viewer(const Graphics_scene &graphics_scene,
+  Basic_Viewer::Basic_Viewer(const Graphics_scene* graphics_scene,
                   const char *title,
                   bool draw_vertices,
                   bool draw_edges,
@@ -96,6 +96,10 @@ namespace CGAL::GLFW {
     void Basic_Viewer::show()
     {
       m_window = create_window(window_size.x, window_size.y, m_title);
+      init_buffers();
+
+      glGenBuffers(NB_GL_BUFFERS, buffers);
+      glGenVertexArrays(NB_VAO_BUFFERS, m_vao); 
       
       glfwSetWindowUserPointer(m_window, this);
       glfwSetKeyCallback(m_window, key_callback);
@@ -128,7 +132,10 @@ namespace CGAL::GLFW {
     }
 
     void Basic_Viewer::make_screenshot(const std::string& pngpath) {
+      m_are_buffers_initialized = false;
       m_window = create_window(window_size.x, window_size.y, m_title, true);
+      init_buffers();
+
       set_cam_mode(cam_mode); 
       
       GLint major, minor;
@@ -172,17 +179,20 @@ namespace CGAL::GLFW {
 
 
   void Basic_Viewer::load_buffer(int i, int location, int gsEnum, int dataCount){ 
-    const std::vector<float>& vector = m_scene.get_array_of_index(gsEnum);
+    const std::vector<float>& vector = m_scene->get_array_of_index(gsEnum);
     load_buffer(i, location, vector, dataCount);
   }
 
-  void Basic_Viewer::init_buffers()
+  void Basic_Viewer::init_buffers(){
+    if (m_are_buffers_initialized){
+      glGenBuffers(NB_GL_BUFFERS, buffers);
+      glGenVertexArrays(NB_VAO_BUFFERS, m_vao); 
+      m_are_buffers_initialized = true;
+    }
+  }
+
+  void Basic_Viewer::load_scene()
   {
-    // TODO faire qu'une seule fois: 
-    glGenBuffers(NB_GL_BUFFERS, buffers);
-
-    glGenVertexArrays(NB_VAO_BUFFERS, m_vao); 
-
     unsigned int bufn = 0;
 
     // 1) POINT SHADER
@@ -312,7 +322,7 @@ namespace CGAL::GLFW {
   
   void Basic_Viewer::render_scene()
   {
-    if(!m_are_buffers_initialized) { init_buffers(); }
+    if(!m_is_scene_loaded) { load_scene(); }
     
     glClearColor(1.0f,1.0f,1.0f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -394,7 +404,7 @@ namespace CGAL::GLFW {
 
     glBindVertexArray(m_vao[VAO_MONO_FACES]);
     glVertexAttrib4fv(2, glm::value_ptr(color));
-    glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_FACES));
+    glDrawArrays(GL_TRIANGLES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_FACES));
   
     glBindVertexArray(m_vao[VAO_COLORED_FACES]);
 
@@ -405,7 +415,7 @@ namespace CGAL::GLFW {
       glEnableVertexAttribArray(2);
     }
 
-    glDrawArrays(GL_TRIANGLES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_FACES));
+    glDrawArrays(GL_TRIANGLES, 0, m_scene->number_of_elements(Graphics_scene::POS_COLORED_FACES));
   }
 
   void Basic_Viewer::draw_rays() {
@@ -418,7 +428,7 @@ namespace CGAL::GLFW {
     glVertexAttrib4fv(1, glm::value_ptr(color));
 
     glLineWidth(m_size_rays);
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_RAYS));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_RAYS));
   
     glBindVertexArray(m_vao[VAO_COLORED_RAYS]);
     if (m_use_mono_color) {
@@ -427,7 +437,7 @@ namespace CGAL::GLFW {
     } else {
       glEnableVertexAttribArray(1);
     }
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_RAYS));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_COLORED_RAYS));
   }
 
   void Basic_Viewer::draw_vertices(RenderMode render) {
@@ -438,7 +448,7 @@ namespace CGAL::GLFW {
 
     glBindVertexArray(m_vao[VAO_MONO_POINTS]);
     glVertexAttrib4fv(1, glm::value_ptr(color));
-    glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_POINTS));
+    glDrawArrays(GL_POINTS, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_POINTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_POINTS]);
     if (m_use_mono_color) {
@@ -447,7 +457,7 @@ namespace CGAL::GLFW {
     } else {
       glEnableVertexAttribArray(1);
     }
-    glDrawArrays(GL_POINTS, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_POINTS));
+    glDrawArrays(GL_POINTS, 0, m_scene->number_of_elements(Graphics_scene::POS_COLORED_POINTS));
 
   }
 
@@ -460,7 +470,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_MONO_LINES]);
     glVertexAttrib4fv(1, glm::value_ptr(color));
     glLineWidth(m_size_lines);
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_LINES));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_LINES));
   
   
     glBindVertexArray(m_vao[VAO_COLORED_LINES]);
@@ -470,7 +480,7 @@ namespace CGAL::GLFW {
     } else {
       glEnableVertexAttribArray(1);
     }
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_LINES));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_COLORED_LINES));
   }
 
   void Basic_Viewer::draw_edges(RenderMode mode) {
@@ -482,7 +492,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
     glVertexAttrib4fv(1, glm::value_ptr(color));
     glLineWidth(m_size_edges);
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
     if (m_use_mono_color) {
@@ -491,14 +501,14 @@ namespace CGAL::GLFW {
     } else {
       glEnableVertexAttribArray(1);
     }
-    glDrawArrays(GL_LINES, 0, m_scene.number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
+    glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_COLORED_SEGMENTS));
     
   }
 
   void Basic_Viewer::generate_clipping_plane() {
-      size_t size=((m_scene.bounding_box().xmax()-m_scene.bounding_box().xmin()) +
-                (m_scene.bounding_box().ymax()-m_scene.bounding_box().ymin()) +
-                (m_scene.bounding_box().zmax()-m_scene.bounding_box().zmin()));
+      size_t size=((m_scene->bounding_box().xmax()-m_scene->bounding_box().xmin()) +
+                (m_scene->bounding_box().ymax()-m_scene->bounding_box().ymin()) +
+                (m_scene->bounding_box().zmax()-m_scene->bounding_box().zmin()));
       
       const unsigned int nbSubdivisions=30;
 
@@ -682,7 +692,7 @@ namespace CGAL::GLFW {
         break;
       case INVERSE_NORMAL:
         m_inverse_normal = !m_inverse_normal;
-        m_scene.reverse_all_normals();
+        m_scene->reverse_all_normals();
         m_are_buffers_initialized = false;
         break;
       case MONO_COLOR:
@@ -1164,6 +1174,11 @@ namespace CGAL::GLFW {
 
   // Blocking call
   inline void draw_graphics_scene(const Graphics_scene &graphics_scene, const char *title)
+  {
+    Basic_Viewer(&graphics_scene, title).show();
+  }
+
+  inline void draw_graphics_scene(const Graphics_scene *graphics_scene, const char *title)
   {
     Basic_Viewer(graphics_scene, title).show();
   }

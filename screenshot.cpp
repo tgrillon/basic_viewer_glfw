@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         CGAL::add_to_graphics_scene(point_set, scene, Graphics_scene_options_green_points());
         CGAL::add_to_graphics_scene(output_mesh, scene);
 
-        auto viewer = CGAL::GLFW::Basic_Viewer(scene);
+        auto viewer = CGAL::GLFW::Basic_Viewer(&scene);
         // TODO faire un exemple plus complexe
         viewer.position({ 0, 0, -50 });
         viewer.make_screenshot("test.png");
