@@ -8,7 +8,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
-// Author(s)     : Théo Benard <>
+// Author(s)     : Théo Benard <benard320@gmail.com>
+
 //                 Théo Grillon <theogrillon6f9@gmail.com>
 
 #pragma once
@@ -24,23 +25,33 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include "Shader.h"
 #include "Input.h"
 #include "Bv_Settings.h"
+#include "math.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 namespace CGAL::GLFW {
   enum RenderMode{ // rendering mode
-        DRAW_ALL=-1, // draw all
-        DRAW_INSIDE_ONLY, // draw only the part inside the clipping plane
-        DRAW_OUTSIDE_ONLY // draw only the part outside the clipping plane
-      };
+      DRAW_ALL=-1, // draw all
+      DRAW_INSIDE_ONLY, // draw only the part inside the clipping plane
+      DRAW_OUTSIDE_ONLY // draw only the part outside the clipping plane
+    };
   
   enum CAM_MODE { PERSPECTIVE, ORTHOGRAPHIC };
-  enum CAM_ROTATION_MODE { CENTER, FREE };
+  enum CAM_ROTATION_MODE { OBJECT, FREE };
+
+  enum ClippingMode { // clipping mode
+    CLIPPING_PLANE_OFF=0,
+    CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF,
+    CLIPPING_PLANE_SOLID_HALF_WIRE_HALF,
+    CLIPPING_PLANE_SOLID_HALF_ONLY,
+    CLIPPING_PLANE_END_INDEX
+  };
 
   const int windowSamples = WINDOW_SAMPLES;
 
@@ -66,10 +77,10 @@ namespace CGAL::GLFW {
 
     /***** Getter & Setter ****/
 
-    // TODO -> impl
     inline void position(const glm::vec3 pos) { cam_position = pos; }
     inline void forward(const glm::vec3 dir) { cam_forward = dir; }
-    // TODO set cam rotation mode 
+
+    // TODO manipuler clip plane via code 
 
     inline void draw_vertices(bool b) { m_draw_vertices = b; }
     inline void draw_edges(bool b) { m_draw_edges = b; }
@@ -86,13 +97,13 @@ namespace CGAL::GLFW {
     inline void lines_mono_color(const CGAL::IO::Color& c) { m_lines_mono_color = c; }
     inline void faces_mono_color(const CGAL::IO::Color& c) { m_faces_mono_color = c; }
 
-    inline void toggle_draw_vertices() { m_draw_vertices != m_draw_vertices; }
-    inline void toggle_draw_edges() { m_draw_edges != m_draw_edges; }
-    inline void toggle_draw_rays() { m_draw_rays != m_draw_rays; }
-    inline void toggle_draw_lines() { m_draw_lines != m_draw_lines; }
-    inline void toggle_draw_faces() { m_draw_faces != m_draw_faces; }
-    inline void toggle_use_mono_color() { m_use_mono_color != m_use_mono_color; }
-    inline void toggle_inverse_normal() { m_inverse_normal != m_inverse_normal; }
+    inline void toggle_draw_vertices() { m_draw_vertices = !m_draw_vertices; }
+    inline void toggle_draw_edges() { m_draw_edges = !m_draw_edges; }
+    inline void toggle_draw_rays() { m_draw_rays = !m_draw_rays; }
+    inline void toggle_draw_lines() { m_draw_lines = !m_draw_lines; }
+    inline void toggle_draw_faces() { m_draw_faces = !m_draw_faces; }
+    inline void toggle_use_mono_color() { m_use_mono_color = !m_use_mono_color; }
+    inline void toggle_inverse_normal() { m_inverse_normal = !m_inverse_normal; }
 
     inline bool draw_vertices()  const { return m_draw_vertices; }
     inline bool draw_edges()     const { return m_draw_edges; }
@@ -186,56 +197,48 @@ namespace CGAL::GLFW {
     bool m_draw_lines;
     bool m_draw_faces;
     bool m_draw_text;
-    bool m_are_buffers_initialized;
-    bool m_flat_shading;
+    bool m_are_buffers_initialized = false;
+    bool m_flat_shading = true;
     bool m_use_mono_color;
     bool m_inverse_normal;
 
-    float m_size_points;
-    float m_size_edges;
-    float m_size_rays;
-    float m_size_lines;
+    float m_size_points = SIZE_POINTS;
+    float m_size_edges = SIZE_EDGES;
+    float m_size_rays = SIZE_RAYS;
+    float m_size_lines = SIZE_LINES;
     
-    CGAL::IO::Color m_faces_mono_color;
-    CGAL::IO::Color m_vertices_mono_color;
-    CGAL::IO::Color m_edges_mono_color;
-    CGAL::IO::Color m_rays_mono_color;
-    CGAL::IO::Color m_lines_mono_color;
+    CGAL::IO::Color m_faces_mono_color = FACES_MONO_COLOR;
+    CGAL::IO::Color m_vertices_mono_color = VERTICES_MONO_COLOR;
+    CGAL::IO::Color m_edges_mono_color = EDGES_MONO_COLOR;
+    CGAL::IO::Color m_rays_mono_color = RAYS_MONO_COLOR;
+    CGAL::IO::Color m_lines_mono_color = LINES_MONO_COLOR;
 
-    glm::vec4 clip_plane;
-    glm::vec4 point_plane;
-    glm::vec4 m_light_position;
-    glm::vec4 m_ambient, m_diffuse, m_specular;
-    float m_shininess;
+    glm::vec4 m_light_position = LIGHT_POSITION;
+    glm::vec4 m_ambient = AMBIENT_COLOR; 
+    glm::vec4 m_diffuse = DIFFUSE_COLOR;
+    glm::vec4 m_specular = SPECULAR_COLOR;
+    float m_shininess = SHININESS;
+
+    glm::vec4 clip_plane = {0, 0, 1, 0};
+    glm::vec4 point_plane = {0, 0, 0, 1};
+
     glm::mat4 modelView;
     glm::mat4 modelViewProjection;
-    bool m_is_opengl_4_3;
+    bool m_is_opengl_4_3 = false;
 
     Shader pl_shader, face_shader, plane_shader;
     
-    // CLIPPING PLANE 
-    enum { // clipping mode
-        CLIPPING_PLANE_OFF=0,
-        CLIPPING_PLANE_SOLID_HALF_TRANSPARENT_HALF,
-        CLIPPING_PLANE_SOLID_HALF_WIRE_HALF,
-        CLIPPING_PLANE_SOLID_HALF_ONLY,
-        CLIPPING_PLANE_END_INDEX
-      };
-
-    int m_use_clipping_plane;
-    std::vector<float> m_array_for_clipping_plane;
-    
-    bool m_clipping_plane_rendering; // will be toggled when alt+c is pressed, which is used for indicating whether or not to render the clipping plane ;
-    float m_clipping_plane_rendering_transparency; // to what extent the transparent part should be rendered;
     /******* CAMERA ******/  
-    Cursor mouse_old;
     
-    float cam_speed, cam_rot_speed;
+    float cam_speed = CAM_MOVE_SPEED;
+    float cam_rotation_speed = CAM_ROT_SPEED;
+    float scene_rotation_speed = SCENE_ROT_SPEED;
 
     glm::mat4 cam_projection;
-    glm::vec3 cam_position;
-    glm::vec2 cam_view = {0, 0};
-    glm::vec3 cam_forward = {}, cam_look_center = {};
+    glm::vec3 cam_position = {0, 0, -5};
+    glm::vec2 cam_view = {};
+    glm::vec3 cam_forward = {0, 0, 1};
+    glm::mat4 scene_rotation = glm::mat4(1.0f);
     float cam_orth_zoom = 1.0f;
 
     glm::ivec2 window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
@@ -244,22 +247,30 @@ namespace CGAL::GLFW {
 
     bool is_fullscreen = false;
     CAM_MODE cam_mode = PERSPECTIVE;
-    CAM_ROTATION_MODE cam_rotation_mode = CENTER;
+    CAM_ROTATION_MODE cam_rotation_mode = OBJECT;
 
     /***************CLIPPING PLANE****************/
+
+    ClippingMode m_use_clipping_plane = CLIPPING_PLANE_OFF;
+    std::vector<float> m_array_for_clipping_plane;
+    
+    bool m_clipping_plane_rendering = true; // will be toggled when alt+c is pressed, which is used for indicating whether or not to render the clipping plane ;
+    float m_clipping_plane_rendering_transparency = CLIPPING_PLANE_RENDERING_TRANSPARENCY; // to what extent the transparent part should be rendered;
 
     int m_cstr_axis_enum = NO_AXIS;
     glm::vec3 m_cstr_axis = {1., 0., 0.};
 
     glm::mat4 clipping_mMatrix = glm::mat4(1.0);
 
-    enum {
+    enum Axis {
       NO_AXIS=0,
       X_AXIS, 
       Y_AXIS, 
       Z_AXIS,
       NB_AXIS_ENUM
     };
+
+    /*********************/
 
     enum Actions {
       MOUSE_ROTATE, MOUSE_TRANSLATE,
@@ -287,7 +298,6 @@ namespace CGAL::GLFW {
       EXIT
     };
     
-    /*********************/
 
     enum VAO_TYPES
     { VAO_MONO_POINTS=0,

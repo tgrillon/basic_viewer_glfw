@@ -6,6 +6,7 @@
 #include <string>
 #include <cctype>
 #include <iomanip>
+#include <glm/glm.hpp>
 
 /**
  * TODO: Peux mieux faire, utiliser (int mod) pour shift/alt 
@@ -42,13 +43,6 @@ struct Action{
   int action;
 };
 
-struct Cursor{
-  Cursor() {};
-  Cursor(double x, double y) : x(x), y(y) {};
-  double x;
-  double y;
-};
-
 class Input
 {
 public:
@@ -59,12 +53,14 @@ private:
 
   std::unordered_map<ActionEnum, std::string> action_description;
   std::deque<Action> key_actions;
-  Cursor cursor;
+  glm::vec2 cursor, cursor_old, cursor_delta;
 
   double scrollDeltaY = 0;
 
 public:
-  Cursor get_cursor() { return cursor; }
+  glm::vec2 get_cursor() const { return cursor; }
+  glm::vec2 get_cursor_old() const { return cursor_old; }
+  glm::vec2 get_cursor_delta() const { return cursor_delta; }
 
   double get_scroll_delta_y() { return scrollDeltaY; }
 
@@ -238,7 +234,9 @@ void Input::on_key_event(int key, int scancode, int action, int mods){
 }
 
 void Input::on_cursor_event(double xpos, double ypo) {
-  cursor = Cursor(xpos, ypo);
+  cursor_delta = {xpos - cursor.x, ypo - cursor.y};
+  cursor_old = cursor;
+  cursor = {xpos, ypo};
 }
 
 void Input::on_scroll_event(double xoffset, double yoffset) {
@@ -295,4 +293,7 @@ void Input::handle_events(){
       end_action(action);
     }
   }
+
+  cursor_old = cursor;
+  cursor_delta = glm::vec2(0.0f);
 };

@@ -86,3 +86,7 @@
 #ifndef CAM_ROT_SPEED
 #define CAM_ROT_SPEED 0.05f 
 #endif
+
+#ifndef SCENE_ROT_SPEED
+#define SCENE_ROT_SPEED 0.5f
+#endif

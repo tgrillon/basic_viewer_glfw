@@ -88,43 +88,9 @@ namespace CGAL::GLFW {
     m_draw_faces(draw_faces),
     m_draw_text(draw_text),
     m_use_mono_color(use_mono_color),
-    m_inverse_normal(inverse_normal),
-    m_flat_shading(true),
-    
-    m_size_points(SIZE_POINTS),
-    m_size_edges(SIZE_EDGES),
-    m_size_rays(SIZE_RAYS),
-    m_size_lines(SIZE_LINES),
-
-    m_faces_mono_color(FACES_MONO_COLOR),
-    m_vertices_mono_color(VERTICES_MONO_COLOR),
-    m_edges_mono_color(EDGES_MONO_COLOR),
-    m_rays_mono_color(RAYS_MONO_COLOR),
-    m_lines_mono_color(LINES_MONO_COLOR),
-
-    m_light_position(LIGHT_POSITION),
-    m_ambient(AMBIENT_COLOR),
-    m_diffuse(DIFFUSE_COLOR),
-    m_specular(SPECULAR_COLOR),
-
-    m_shininess(SHININESS),
-
-    point_plane(0, 0, 0, 1),
-    clip_plane(0, 0, 1, 0),
-
-    cam_speed(CAM_MOVE_SPEED),
-    cam_rot_speed(CAM_ROT_SPEED),
-
-    m_clipping_plane_rendering_transparency(CLIPPING_PLANE_RENDERING_TRANSPARENCY), 
-    m_clipping_plane_rendering(true),
-    m_use_clipping_plane(CLIPPING_PLANE_OFF),
-
-    m_are_buffers_initialized(false),
-    m_is_opengl_4_3(false)
+    m_inverse_normal(inverse_normal)
     {
       init_keys_actions();
-      cam_position = glm::vec3(0,0,-5);
-      cam_forward = glm::vec3(0,0,1);
     }
 
     void Basic_Viewer::show()
@@ -297,10 +263,7 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::update_uniforms(){
-    modelView = cam_rotation_mode == FREE ?
-      glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0))
-      :
-      glm::lookAt(cam_position, cam_look_center, glm::vec3(0,1,0));
+    modelView = glm::lookAt(cam_position, cam_position + cam_forward, glm::vec3(0,1,0)) * scene_rotation;
 
     modelViewProjection = cam_projection * modelView;
 
@@ -613,7 +576,6 @@ namespace CGAL::GLFW {
       case MOUSE_TRANSLATE:
       case MOUSE_ROTATE:
         // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        mouse_old = get_cursor();
         break;
     }
   }
@@ -685,22 +647,22 @@ namespace CGAL::GLFW {
         cam_speed--;
         break;
       case INC_ROT_SPEED_D1:
-        cam_rot_speed += 0.1f;
+        scene_rotation_speed += 0.1f;
         break;
       case DEC_ROT_SPEED_D1:
-        cam_rot_speed -= 0.1f;
+        scene_rotation_speed -= 0.1f;
         break;
       case INC_ROT_SPEED_1:
-        cam_rot_speed++;
+        scene_rotation_speed++;
         break;
       case DEC_ROT_SPEED_1:
-        cam_rot_speed--;
+        scene_rotation_speed--;
         break;
       case CLIPPING_PLANE_DISPLAY:
         m_clipping_plane_rendering = !m_clipping_plane_rendering;
         break;
       case CLIPPING_PLANE_MODE:
-        m_use_clipping_plane = (m_use_clipping_plane + 1) % CLIPPING_PLANE_END_INDEX;
+        m_use_clipping_plane = static_cast<ClippingMode>((m_use_clipping_plane + 1) % CLIPPING_PLANE_END_INDEX);
         break;
       case VERTICES_DISPLAY:
         m_draw_vertices = !m_draw_vertices;
@@ -986,18 +948,17 @@ namespace CGAL::GLFW {
   /*********************CLIP STUFF**********************/
 
   void Basic_Viewer::rotate_clipping_plane() {
-    Cursor mouse_current = get_cursor(); 
+    glm::vec2 cursor_old = get_cursor_old();
+    glm::vec2 cursor_current = get_cursor();
 
-    if (mouse_current.x == mouse_old.x && 
-        mouse_current.y == mouse_old.y) return;
+    if (cursor_current.x == cursor_old.x && 
+        cursor_current.y == cursor_old.y) return;
 
-    glm::vec2 old_pos = to_ndc(mouse_old.x, mouse_old.y); 
+    glm::vec2 old_pos = to_ndc(cursor_old.x, cursor_old.y); 
     glm::vec3 start = mapping_cursor_toHemisphere(old_pos.x, old_pos.y);
 
-    glm::vec2 crr_pos = to_ndc(mouse_current.x, mouse_current.y); 
+    glm::vec2 crr_pos = to_ndc(cursor_current.x, cursor_current.y); 
     glm::vec3 end = mapping_cursor_toHemisphere(crr_pos.x, crr_pos.y);
-
-    mouse_old = get_cursor();
 
     glm::mat4 rotation = get_rotation(start, end);
     clipping_mMatrix = rotation * clipping_mMatrix;
@@ -1010,17 +971,11 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::translate_clipping_plane() {
-    Cursor mouse_current = get_cursor(); 
+    glm::vec2 mouse_current = get_cursor(); 
 
     const float d = 0.01;
 
-    glm::vec3 dir {
-      mouse_current.x - mouse_old.x, 
-      mouse_current.y - mouse_old.y,
-      0
-    };
-
-    mouse_old = get_cursor();
+    glm::vec3 dir = {get_cursor_delta(), 0.0f};
 
     glm::vec3 up = {0, 1, 0};
     glm::vec3 right = glm::normalize(-glm::cross(up, cam_forward)); 
@@ -1037,13 +992,7 @@ namespace CGAL::GLFW {
   void Basic_Viewer::translate_clipping_plane_cam_dir() {
     const float d = 0.02;
 
-    glm::vec3 cursor_delta {
-      get_cursor().x - mouse_old.x, 
-      get_cursor().y - mouse_old.y,
-      0
-    };
-
-    mouse_old = get_cursor();
+    glm::vec2 cursor_delta = get_cursor_delta();
 
     float s = cursor_delta.x;
     if (abs(cursor_delta.y) > abs(cursor_delta.x))
@@ -1067,36 +1016,22 @@ namespace CGAL::GLFW {
       dir.z * cam_forward * delta;
 
     cam_position += result;
-    cam_look_center += result;
   }
 
   void Basic_Viewer::mouse_rotate(){
-    glm::vec2 cursor_delta {
-      get_cursor().x - mouse_old.x, 
-      get_cursor().y - mouse_old.y
-    };
-
-    mouse_old = get_cursor();
-    
-    cam_view += cursor_delta * cam_rot_speed;
-
-    glm::vec3 dir =  {
-      cos(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y)),
-      sin(glm::radians(cam_view.y)),
-      sin(glm::radians(cam_view.x)) * cos(glm::radians(cam_view.y))
-    };
+    glm::vec2 cursor_delta = glm::radians(get_cursor_delta());
 
 
     if (cam_rotation_mode == FREE){
-      dir.y = -dir.y;
-      cam_forward = dir;
+      cam_view += cursor_delta * scene_rotation_speed;
+
+      cam_forward = sphericalToCartesian(cam_view);
+
       return;
     }
 
-    // cam_rotation_mode == CENTER
-    glm::vec3 camToCenter = cam_look_center - cam_position;
-    cam_forward = normalize(camToCenter);
-    cam_position = cam_look_center + dir * length(camToCenter);
+    cursor_delta *= cam_rotation_speed;
+    scene_rotation = glm::eulerAngleXY(-cursor_delta.y, cursor_delta.x) * scene_rotation; 
   }
 
   void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
@@ -1112,18 +1047,11 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::switch_rotation_mode() {
-    if (cam_rotation_mode == CENTER){
-      cam_rotation_mode = FREE;
-      cam_view.x += 180;
+    cam_rotation_mode = cam_rotation_mode == FREE ? OBJECT : FREE;
 
-      return;
+    if (cam_rotation_mode == FREE) {
+      cam_view = cartesianToSpherical(cam_forward);
     }
-
-    cam_view.x -= 180;
-    
-    glm::vec3 camToCenter = glm::normalize(cam_look_center - cam_position);
-    cam_forward = camToCenter;
-    cam_rotation_mode = cam_rotation_mode == FREE ? CENTER : FREE;
   }
 
   void Basic_Viewer::fullscreen(){
@@ -1151,13 +1079,7 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::mouse_translate(){
-    glm::vec3 cursor_delta {
-      get_cursor().x - mouse_old.x, 
-      get_cursor().y - mouse_old.y,
-      0
-    };
-
-    mouse_old = get_cursor();
+    glm::vec3 cursor_delta = {get_cursor_delta(), 0};
 
     if (cursor_delta.x == 0 && cursor_delta.y == 0)
       return;
@@ -1178,7 +1100,9 @@ namespace CGAL::GLFW {
 
       std::string action_str = get_action_description(action);
 
-      if (action_str.empty()) action_str = "No description found";
+
+      // Skip this entry if it has no useful description
+      if (action_str.empty()) continue;
         
       line += "   " + action_str;
       
@@ -1208,7 +1132,14 @@ namespace CGAL::GLFW {
     if (cam_mode == ORTHOGRAPHIC){
       cam_orth_zoom += z;
       set_cam_mode(ORTHOGRAPHIC);
+      return;
     }
+
+    // readjust position of the camera
+    const float zoom_inc = 0.1f; // todo -> define
+
+    cam_position += (zoom_inc * z) * cam_forward;
+    set_cam_mode(PERSPECTIVE);
   }
 
   void Basic_Viewer::screenshot(const std::string& filepath) {
