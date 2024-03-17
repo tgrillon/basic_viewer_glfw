@@ -243,6 +243,7 @@ namespace CGAL::GLFW {
     glm::mat4 cam_projection;
     glm::vec3 cam_position = {0, 0, -5};
     glm::vec2 cam_view = {};
+    glm::vec2 scene_view = {};
     glm::vec3 cam_forward = {0, 0, 1};
     glm::mat4 scene_rotation = glm::mat4(1.0f);
     float cam_orth_zoom = 1.0f;

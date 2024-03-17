@@ -1031,17 +1031,16 @@ namespace CGAL::GLFW {
   void Basic_Viewer::mouse_rotate(){
     glm::vec2 cursor_delta = glm::radians(get_cursor_delta());
 
-
     if (cam_rotation_mode == FREE){
-      cam_view += cursor_delta * scene_rotation_speed;
+      cam_view += cursor_delta * cam_rotation_speed;
 
       cam_forward = sphericalToCartesian(cam_view);
 
       return;
     }
 
-    cursor_delta *= cam_rotation_speed;
-    scene_rotation = glm::eulerAngleXY(-cursor_delta.y, cursor_delta.x) * scene_rotation; 
+    scene_view += cursor_delta * scene_rotation_speed;
+    scene_rotation = glm::eulerAngleXY(-scene_view.y, scene_view.x);
   }
 
   void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
