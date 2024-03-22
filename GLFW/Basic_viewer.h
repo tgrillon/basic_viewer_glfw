@@ -77,8 +77,8 @@ namespace CGAL::GLFW {
 
     /***** Getter & Setter ****/
 
-    inline void position(const glm::vec3 pos) { cam_position = pos; }
-    inline void forward(const glm::vec3 dir) { cam_forward = dir; }
+    inline void position(const glm::vec3 pos) { m_cam_position = pos; }
+    inline void forward(const glm::vec3 dir) { m_cam_forward = dir; }
     inline void set_scene(const Graphics_scene* scene) { 
       m_scene = scene;
       m_is_scene_loaded = false;
@@ -125,7 +125,7 @@ namespace CGAL::GLFW {
     inline const CGAL::IO::Color& faces_mono_color()    const { return m_faces_mono_color; }
 
     inline bool clipping_plane_enable() const { return m_use_clipping_plane != CLIPPING_PLANE_OFF; }
-    inline bool is_orthograpic() const { return cam_mode == ORTHOGRAPHIC; }
+    inline bool is_orthograpic() const { return m_cam_mode == ORTHOGRAPHIC; }
     
   private:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -225,37 +225,37 @@ namespace CGAL::GLFW {
     glm::vec4 m_specular = SPECULAR_COLOR;
     float m_shininess = SHININESS;
 
-    glm::vec4 clip_plane = {0, 0, 1, 0};
-    glm::vec4 point_plane = {0, 0, 0, 1};
+    glm::vec4 m_clip_plane = {0, 0, 1, 0};
+    glm::vec4 m_point_plane = {0, 0, 0, 1};
 
-    glm::mat4 modelView;
-    glm::mat4 modelViewProjection;
+    glm::mat4 m_model_view;
+    glm::mat4 m_mvp;
     bool m_is_opengl_4_3 = false;
 
-    Shader pl_shader, face_shader, plane_shader;
+    Shader m_pl_shader, m_face_shader, m_plane_shader;
     
     /******* CAMERA ******/  
     
-    float cam_speed = CAM_MOVE_SPEED;
-    float cam_rotation_speed = CAM_ROT_SPEED;
-    float scene_rotation_speed = SCENE_ROT_SPEED;
+    float m_cam_speed = CAM_MOVE_SPEED;
+    float m_cam_rotation_speed = CAM_ROT_SPEED;
+    float m_scene_rotation_speed = SCENE_ROT_SPEED;
 
-    glm::mat4 cam_projection;
-    glm::vec3 cam_position = {0, 0, -5};
-    glm::vec2 cam_view = {};
-    glm::vec3 cam_forward = {0, 0, 1};
-    float cam_orth_zoom = 1.0f;
+    glm::mat4 m_cam_projection;
+    glm::vec3 m_cam_position = {0, 0, -5};
+    glm::vec2 m_cam_view = {};
+    glm::vec3 m_cam_forward = {0, 0, 1};
+    float m_cam_orth_zoom = 1.0f;
 
-    glm::vec2 scene_view = {};
-    glm::mat4 scene_rotation = glm::mat4(1.0f);
+    glm::vec2 m_scene_view = {};
+    glm::mat4 m_scene_rotation = glm::mat4(1.0f);
 
-    glm::ivec2 window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
-    glm::ivec2 old_window_size;
-    glm::ivec2 old_window_pos;
+    glm::ivec2 m_window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
+    glm::ivec2 m_old_window_size;
+    glm::ivec2 m_old_window_pos;
 
-    bool is_fullscreen = false;
-    CAM_MODE cam_mode = PERSPECTIVE;
-    CAM_ROTATION_MODE cam_rotation_mode = OBJECT;
+    bool m_is_fullscreen = false;
+    CAM_MODE m_cam_mode = PERSPECTIVE;
+    CAM_ROTATION_MODE m_cam_rotation_mode = OBJECT;
 
     /***************CLIPPING PLANE****************/
 
@@ -268,7 +268,7 @@ namespace CGAL::GLFW {
     int m_cstr_axis_enum = NO_AXIS;
     glm::vec3 m_cstr_axis = {1., 0., 0.};
 
-    glm::mat4 clipping_mMatrix = glm::mat4(1.0);
+    glm::mat4 m_clipping_matrix = glm::mat4(1.0);
 
     enum Axis {
       NO_AXIS=0,
@@ -327,6 +327,6 @@ namespace CGAL::GLFW {
     static const unsigned int NB_GL_BUFFERS=(Graphics_scene::END_POS-Graphics_scene::BEGIN_POS)+
       (Graphics_scene::END_COLOR-Graphics_scene::BEGIN_COLOR)+3; // +2 for normals (mono and color), +1 for clipping plane
 
-    GLuint buffers[NB_GL_BUFFERS]; // +1 for the vbo buffer of clipping plane
+    GLuint m_buffers[NB_GL_BUFFERS]; // +1 for the vbo buffer of clipping plane
   };
 }
