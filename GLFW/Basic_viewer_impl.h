@@ -993,17 +993,17 @@ namespace CGAL::GLFW {
   void Basic_Viewer::switch_axis(int axis) {
     if (axis == X_AXIS) {
       std::cout << "Constrained on X" << std::endl;
-      m_cstr_axis = {1.,0.,0.};
+      m_cstr_axis << 1., 0., 0.;
       return;
     }
     if (axis == Y_AXIS) {
       std::cout << "Constrained on Y" << std::endl;
-      m_cstr_axis = {0.,1.,0.};
+      m_cstr_axis << 0., 1., 0.;
       return;
     }
     if (axis == Z_AXIS) {
       std::cout << "Constrained on Z" << std::endl;
-      m_cstr_axis = {0.,0.,1.};
+      m_cstr_axis << 0., 0., 1.;
       return;
     }
     std::cout << "Constraint Axis Disabled" << std::endl;
@@ -1011,13 +1011,17 @@ namespace CGAL::GLFW {
 
   // Normalize Device Coordinates 
   Basic_Viewer::vec2f Basic_Viewer::to_ndc(double x, double y) {
-    return { x / m_window_size.x() * 2 - 1, y / m_window_size.y() * 2 - 1 };
+    vec2f result;
+    result << 
+      x / m_window_size.x() * 2 - 1,
+      y / m_window_size.y() * 2 - 1;
+    
+    return result;
   }
 
   // mouse position mapped to the hemisphere 
   Basic_Viewer::vec3f Basic_Viewer::mapping_cursor_toHemisphere(double x, double y) {
-    vec3f pt;
-    pt << x, y, 0.;
+    vec3f pt { x, y, 0. };
     float xy_squared = pt.x()*pt.x()+pt.y()*pt.y();
     if (xy_squared > .5) { // inside the sphere
       pt.z() = .5/sqrt(xy_squared);
