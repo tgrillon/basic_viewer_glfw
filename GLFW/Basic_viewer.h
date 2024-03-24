@@ -17,6 +17,9 @@
 #include <CGAL/Graphics_scene.h>
 #include <CGAL/Basic_shaders.h>
 
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Geometry>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -60,6 +63,12 @@ namespace CGAL::GLFW {
                                     const char *title = "CGAL Basic Viewer");
 
   class Basic_Viewer : public Input {
+  public: 
+    typedef Eigen::Matrix4f mat4f;
+    typedef Eigen::Vector4f vec4f;
+    typedef Eigen::Vector3f vec3f;
+    typedef Eigen::Vector2f vec2f;
+    typedef Eigen::Vector2i vec2i;
   public:
     Basic_Viewer(const Graphics_scene* graphics_scene,
                     const char *title = "",
@@ -77,8 +86,8 @@ namespace CGAL::GLFW {
 
     /***** Getter & Setter ****/
 
-    inline void position(const glm::vec3 pos) { m_cam_position = pos; }
-    inline void forward(const glm::vec3 dir) { m_cam_forward = dir; }
+    inline void position(const vec3f pos) { m_cam_position = pos; }
+    inline void forward(const vec3f dir) { m_cam_forward = dir; }
     inline void set_scene(const Graphics_scene* scene) { 
       m_scene = scene;
       m_is_scene_loaded = false;
@@ -167,15 +176,15 @@ namespace CGAL::GLFW {
     void action_event(ActionEnum action) override;
     void end_action(ActionEnum action) override;
     
-    void translate(const glm::vec3 dir);
+    void translate(const vec3f dir);
     void mouse_rotate();
     void mouse_translate();
     void set_cam_mode(CAM_MODE mode);
     void switch_rotation_mode();
 
-    glm::vec2 to_ndc(double, double);
-    glm::vec3 mapping_cursor_toHemisphere(double x, double y);
-    glm::mat4 get_rotation(glm::vec3 const& start, glm::vec3 const& end);
+    vec2f to_ndc(double, double);
+    vec3f mapping_cursor_toHemisphere(double x, double y);
+    mat4f get_rotation(vec3f const& start, vec3f const& end);
     void rotate_clipping_plane();
 
     void translate_clipping_plane();
@@ -190,7 +199,7 @@ namespace CGAL::GLFW {
 
     void print_help();
 
-    glm::vec4 color_to_vec4(const CGAL::IO::Color& c) const;
+    vec4f color_to_vec4(const CGAL::IO::Color& c) const;
 
   private:
     GLFWwindow *m_window;
@@ -219,17 +228,17 @@ namespace CGAL::GLFW {
     CGAL::IO::Color m_rays_mono_color = RAYS_MONO_COLOR;
     CGAL::IO::Color m_lines_mono_color = LINES_MONO_COLOR;
 
-    glm::vec4 m_light_position = LIGHT_POSITION;
-    glm::vec4 m_ambient = AMBIENT_COLOR; 
-    glm::vec4 m_diffuse = DIFFUSE_COLOR;
-    glm::vec4 m_specular = SPECULAR_COLOR;
+    vec4f m_light_position = LIGHT_POSITION;
+    vec4f m_ambient = AMBIENT_COLOR; 
+    vec4f m_diffuse = DIFFUSE_COLOR;
+    vec4f m_specular = SPECULAR_COLOR;
     float m_shininess = SHININESS;
 
-    glm::vec4 m_clip_plane = {0, 0, 1, 0};
-    glm::vec4 m_point_plane = {0, 0, 0, 1};
+    vec4f m_clip_plane {0, 0, 1, 0};
+    vec4f m_point_plane {0, 0, 0, 1};
 
-    glm::mat4 m_model_view;
-    glm::mat4 m_mvp;
+    mat4f m_model_view;
+    mat4f m_mvp;
     bool m_is_opengl_4_3 = false;
 
     Shader m_pl_shader, m_face_shader, m_plane_shader;
@@ -240,18 +249,18 @@ namespace CGAL::GLFW {
     float m_cam_rotation_speed = CAM_ROT_SPEED;
     float m_scene_rotation_speed = SCENE_ROT_SPEED;
 
-    glm::mat4 m_cam_projection;
-    glm::vec3 m_cam_position = {0, 0, -5};
-    glm::vec2 m_cam_view = {};
-    glm::vec3 m_cam_forward = {0, 0, 1};
+    mat4f m_cam_projection;
+    vec3f m_cam_position {0, 0, -5};
+    vec2f m_cam_view {0, 0};
+    vec3f m_cam_forward {0, 0, 1};
     float m_cam_orth_zoom = 1.0f;
 
-    glm::vec2 m_scene_view = {};
-    glm::mat4 m_scene_rotation = glm::mat4(1.0f);
+    vec2f m_scene_view;
+    mat4f m_scene_rotation = mat4f::Identity();
 
-    glm::ivec2 m_window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
-    glm::ivec2 m_old_window_size;
-    glm::ivec2 m_old_window_pos;
+    vec2i m_window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
+    vec2i m_old_window_size;
+    vec2i m_old_window_pos;
 
     bool m_is_fullscreen = false;
     CAM_MODE m_cam_mode = PERSPECTIVE;
@@ -266,9 +275,9 @@ namespace CGAL::GLFW {
     float m_clipping_plane_rendering_transparency = CLIPPING_PLANE_RENDERING_TRANSPARENCY; // to what extent the transparent part should be rendered;
 
     int m_cstr_axis_enum = NO_AXIS;
-    glm::vec3 m_cstr_axis = {1., 0., 0.};
+    vec3f m_cstr_axis {1., 0., 0.};
 
-    glm::mat4 m_clipping_matrix = glm::mat4(1.0);
+    mat4f m_clipping_matrix = mat4f::Identity();
 
     enum Axis {
       NO_AXIS=0,

@@ -6,7 +6,8 @@
 #include <string>
 #include <cctype>
 #include <iomanip>
-#include <glm/glm.hpp>
+// #include <glm/glm.hpp>
+#include <eigen3/Eigen/Core>
 
 /**
  * TODO: Peux mieux faire, utiliser (int mod) pour shift/alt 
@@ -53,14 +54,14 @@ private:
 
   std::unordered_map<ActionEnum, std::string> action_description;
   std::deque<Action> key_actions;
-  glm::vec2 cursor, cursor_old, cursor_delta;
+  Eigen::Vector2f cursor, cursor_old, cursor_delta;
 
   double scrollDeltaY = 0;
 
 public:
-  glm::vec2 get_cursor() const { return cursor; }
-  glm::vec2 get_cursor_old() const { return cursor_old; }
-  glm::vec2 get_cursor_delta() const { return cursor_delta; }
+  Eigen::Vector2f get_cursor() const { return cursor; }
+  Eigen::Vector2f get_cursor_old() const { return cursor_old; }
+  Eigen::Vector2f get_cursor_delta() const { return cursor_delta; }
 
   double get_scroll_delta_y() { return scrollDeltaY; }
 
@@ -234,9 +235,9 @@ void Input::on_key_event(int key, int scancode, int action, int mods){
 }
 
 void Input::on_cursor_event(double xpos, double ypo) {
-  cursor_delta = {xpos - cursor.x, ypo - cursor.y};
+  cursor_delta << xpos - cursor.x(), ypo - cursor.y();
   cursor_old = cursor;
-  cursor = {xpos, ypo};
+  cursor << xpos, ypo;
 }
 
 void Input::on_scroll_event(double xoffset, double yoffset) {
@@ -295,5 +296,5 @@ void Input::handle_events(){
   }
 
   cursor_old = cursor;
-  cursor_delta = glm::vec2(0.0f);
+  cursor_delta << 0.0f, 0.0f;
 };
