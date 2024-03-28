@@ -96,7 +96,7 @@ namespace CGAL::GLFW {
 
     void Basic_Viewer::show()
     {
-      m_window = create_window(m_window_size.x, m_window_size.y, m_title);
+      m_window = create_window(m_window_size.x(), m_window_size.y(), m_title);
       init_buffers();
 
       glGenBuffers(NB_GL_BUFFERS, m_buffers);
@@ -134,7 +134,7 @@ namespace CGAL::GLFW {
 
     void Basic_Viewer::make_screenshot(const std::string& pngpath) {
       m_are_buffers_initialized = false;
-      m_window = create_window(m_window_size.x, m_window_size.y, m_title, true);
+      m_window = create_window(m_window_size.x(), m_window_size.y(), m_title, true);
       init_buffers();
 
       set_cam_mode(m_cam_mode); 
@@ -273,8 +273,21 @@ namespace CGAL::GLFW {
     m_are_buffers_initialized = true;
   }
 
+  CGAL::Plane_3<Basic_Viewer::Local_kernel> Basic_Viewer::clipping_plane() const
+  {
+    const mat4f cpm = m_clipping_matrix;
+    CGAL::Aff_transformation_3<Basic_Viewer::Local_kernel> aff(
+      cpm(0,0), cpm(0,1), cpm(0,2), cpm(0,3),
+      cpm(1,0), cpm(1,1), cpm(1,2), cpm(1,3),
+      cpm(2,0), cpm(2,1), cpm(2,2), cpm(2,3)
+    );
+
+    CGAL::Plane_3<Local_kernel> p3(0, 0, 1, 0);
+    return p3.transform(aff);
+  }
+
   void Basic_Viewer::update_uniforms(){
-    m_model_view = glm::lookAt(m_cam_position, m_cam_position + m_cam_forward, glm::vec3(0,1,0)) * m_scene_rotation;
+    m_model_view = lookAt(m_cam_position, m_cam_position + m_cam_forward, vec3f(0,1,0)) * m_scene_rotation;
 
     m_mvp = m_cam_projection * m_model_view;
 
@@ -288,37 +301,36 @@ namespace CGAL::GLFW {
   void Basic_Viewer::set_face_uniforms() {
     m_face_shader.use();
 
-    m_face_shader.setMatrix4f("mvp_matrix", glm::value_ptr(m_mvp));
-    m_face_shader.setMatrix4f("mv_matrix", glm::value_ptr(m_model_view));
-    // face_shader.setFloat("point_size", m_size_points);
+    m_face_shader.setMatrix4f("mvp_matrix", m_mvp.data());
+    m_face_shader.setMatrix4f("mv_matrix", m_model_view.data());
     
-    m_face_shader.setVec4f("light_pos", glm::value_ptr(m_light_position));
-    m_face_shader.setVec4f("light_diff", glm::value_ptr(m_diffuse));
-    m_face_shader.setVec4f("light_spec", glm::value_ptr(m_specular));
-    m_face_shader.setVec4f("light_amb", glm::value_ptr(m_ambient));
+    m_face_shader.setVec4f("light_pos", m_light_position.data());
+    m_face_shader.setVec4f("light_diff", m_diffuse.data());
+    m_face_shader.setVec4f("light_spec", m_specular.data());
+    m_face_shader.setVec4f("light_amb", m_ambient.data());
     m_face_shader.setFloat("spec_power", m_shininess);    
 
-    m_face_shader.setVec4f("clipPlane", glm::value_ptr(m_clip_plane));
-    m_face_shader.setVec4f("pointPlane", glm::value_ptr(m_point_plane));
+    m_face_shader.setVec4f("clipPlane", m_clip_plane.data());
+    m_face_shader.setVec4f("pointPlane", m_point_plane.data());
     m_face_shader.setFloat("rendering_transparency", m_clipping_plane_rendering_transparency);
   }
 
   void Basic_Viewer::set_pl_uniforms() {
     m_pl_shader.use();
     
-    m_pl_shader.setVec4f("clipPlane", glm::value_ptr(m_clip_plane));
-    m_pl_shader.setVec4f("pointPlane", glm::value_ptr(m_point_plane));
-    m_pl_shader.setMatrix4f("mvp_matrix", glm::value_ptr(m_mvp));
+    m_pl_shader.setVec4f("clipPlane", m_clip_plane.data());
+    m_pl_shader.setVec4f("pointPlane", m_point_plane.data());
+    m_pl_shader.setMatrix4f("mvp_matrix", m_mvp.data());
     m_pl_shader.setFloat("point_size", m_size_points);
   }
 
   void Basic_Viewer::set_clipping_uniforms() {
-    m_point_plane = m_clipping_matrix * glm::vec4(0, 0, 0, 1);
-    m_clip_plane = m_clipping_matrix * glm::vec4(0, 0, 1, 0);
+    m_point_plane = m_clipping_matrix * vec4f(0, 0, 0, 1);
+    m_clip_plane = m_clipping_matrix * vec4f(0, 0, 1, 0);
     m_plane_shader.use();
 
-    m_plane_shader.setMatrix4f("vp_matrix", glm::value_ptr(m_mvp));
-    m_plane_shader.setMatrix4f("m_matrix", glm::value_ptr(m_clipping_matrix));
+    m_plane_shader.setMatrix4f("vp_matrix", m_mvp.data());
+    m_plane_shader.setMatrix4f("m_matrix", m_clipping_matrix.data());
   }
   
   void Basic_Viewer::render_scene()
@@ -346,7 +358,7 @@ namespace CGAL::GLFW {
     if (m_draw_lines)     { draw_lines(); }
   }
 
-  glm::vec4 Basic_Viewer::color_to_vec4(const CGAL::IO::Color& c) const
+  Basic_Viewer::vec4f Basic_Viewer::color_to_vec4(const CGAL::IO::Color& c) const
   {
     return { (float)c.red()/255, (float)c.green()/255, (float)c.blue()/255, 1.0f };
   }
@@ -401,17 +413,17 @@ namespace CGAL::GLFW {
     m_face_shader.use();
     m_face_shader.setFloat("rendering_mode", mode);
 
-    glm::vec4 color = color_to_vec4(m_faces_mono_color);    
+    vec4f color = color_to_vec4(m_faces_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_FACES]);
-    glVertexAttrib4fv(2, glm::value_ptr(color));
+    glVertexAttrib4fv(2, color.data());
     glDrawArrays(GL_TRIANGLES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_FACES));
   
     glBindVertexArray(m_vao[VAO_COLORED_FACES]);
 
     if (m_use_mono_color) {
       glDisableVertexAttribArray(2);
-      glVertexAttrib4fv(2, glm::value_ptr(color));
+      glVertexAttrib4fv(2, color.data());
     } else {
       glEnableVertexAttribArray(2);
     }
@@ -423,10 +435,10 @@ namespace CGAL::GLFW {
     m_pl_shader.use();
     m_pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
-    glm::vec4 color = color_to_vec4(m_rays_mono_color);    
+    vec4f color = color_to_vec4(m_rays_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_RAYS]);
-    glVertexAttrib4fv(1, glm::value_ptr(color));
+    glVertexAttrib4fv(1, color.data());
 
     glLineWidth(m_size_rays);
     glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_RAYS));
@@ -434,7 +446,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_COLORED_RAYS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(color));
+      glVertexAttrib4fv(1, color.data());
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -445,16 +457,16 @@ namespace CGAL::GLFW {
     m_pl_shader.use();
     m_pl_shader.setFloat("rendering_mode", render);
     
-    glm::vec4 color = color_to_vec4(m_vertices_mono_color);    
+    vec4f color = color_to_vec4(m_vertices_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_POINTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(color));
+    glVertexAttrib4fv(1, color.data());
     glDrawArrays(GL_POINTS, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_POINTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_POINTS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(color));
+      glVertexAttrib4fv(1, color.data());
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -466,10 +478,10 @@ namespace CGAL::GLFW {
     m_pl_shader.use();
     m_pl_shader.setFloat("rendering_mode", RenderMode::DRAW_ALL);
     
-    glm::vec4 color = color_to_vec4(m_lines_mono_color);    
+    vec4f color = color_to_vec4(m_lines_mono_color);    
     
     glBindVertexArray(m_vao[VAO_MONO_LINES]);
-    glVertexAttrib4fv(1, glm::value_ptr(color));
+    glVertexAttrib4fv(1, color.data());
     glLineWidth(m_size_lines);
     glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_LINES));
   
@@ -477,7 +489,7 @@ namespace CGAL::GLFW {
     glBindVertexArray(m_vao[VAO_COLORED_LINES]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(color));
+      glVertexAttrib4fv(1, color.data());
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -488,17 +500,17 @@ namespace CGAL::GLFW {
     m_pl_shader.use();
     m_pl_shader.setFloat("rendering_mode", mode);
           
-    glm::vec4 color = color_to_vec4(m_edges_mono_color);    
+    vec4f color = color_to_vec4(m_edges_mono_color);    
 
     glBindVertexArray(m_vao[VAO_MONO_SEGMENTS]);
-    glVertexAttrib4fv(1, glm::value_ptr(color));
+    glVertexAttrib4fv(1, color.data());
     glLineWidth(m_size_edges);
     glDrawArrays(GL_LINES, 0, m_scene->number_of_elements(Graphics_scene::POS_MONO_SEGMENTS));
   
     glBindVertexArray(m_vao[VAO_COLORED_SEGMENTS]);
     if (m_use_mono_color) {
       glDisableVertexAttribArray(1);
-      glVertexAttrib4fv(1, glm::value_ptr(color));
+      glVertexAttrib4fv(1, color.data());
     } else {
       glEnableVertexAttribArray(1);
     }
@@ -603,22 +615,22 @@ namespace CGAL::GLFW {
 
     switch (action){
       case UP:
-        translate(glm::vec3(0, m_cam_speed, 0));
+        translate(vec3f(0, m_cam_speed, 0));
         break;
       case DOWN:
-        translate(glm::vec3(0, -m_cam_speed, 0));
+        translate(vec3f(0, -m_cam_speed, 0));
         break;
       case LEFT:
-        translate(glm::vec3(m_cam_speed, 0, 0));
+        translate(vec3f(m_cam_speed, 0, 0));
         break;
       case RIGHT:
-        translate(glm::vec3(-m_cam_speed, 0, 0));
+        translate(vec3f(-m_cam_speed, 0, 0));
         break;
       case FORWARD:
-        translate(glm::vec3(0, 0, m_cam_speed));
+        translate(vec3f(0, 0, m_cam_speed));
         break;
       case BACKWARDS:
-        translate(glm::vec3(0, 0, -m_cam_speed));
+        translate(vec3f(0, 0, -m_cam_speed));
         break;
       case MOUSE_ROTATE: 
         mouse_rotate();
@@ -716,44 +728,44 @@ namespace CGAL::GLFW {
           m_size_points--; 
         break;
       case INC_LIGHT_ALL:
-        m_ambient.r += 0.01;
-        if (m_ambient.r > 1) m_ambient.r=1; 
-        m_ambient.g += 0.01;
-        if (m_ambient.g > 1) m_ambient.g=1; 
-        m_ambient.b += 0.01;
-        if (m_ambient.b > 1) m_ambient.b=1; 
+        m_ambient.x() += 0.01;
+        if (m_ambient.x() > 1) m_ambient.x()=1; 
+        m_ambient.y() += 0.01;
+        if (m_ambient.y() > 1) m_ambient.y()=1; 
+        m_ambient.z() += 0.01;
+        if (m_ambient.z() > 1) m_ambient.z()=1; 
         break;
       case DEC_LIGHT_ALL:
-        m_ambient.r -= 0.01;
-        if (m_ambient.r < 0) m_ambient.r=0; 
-        m_ambient.g-= 0.01;
-        if (m_ambient.g < 0) m_ambient.g=0; 
-        m_ambient.b-= 0.01;
-        if (m_ambient.b < 0) m_ambient.b=0; 
+        m_ambient.x() -= 0.01;
+        if (m_ambient.x() < 0) m_ambient.x()=0; 
+        m_ambient.y()-= 0.01;
+        if (m_ambient.y() < 0) m_ambient.y()=0; 
+        m_ambient.z()-= 0.01;
+        if (m_ambient.z() < 0) m_ambient.z()=0; 
         break;
       case INC_LIGHT_R:
-        m_ambient.r+= 0.01;
-        if (m_ambient.r > 1) m_ambient.r=1; 
+        m_ambient.x()+= 0.01;
+        if (m_ambient.x() > 1) m_ambient.x()=1; 
         break;
       case INC_LIGHT_G:
-        m_ambient.g+= 0.01;
-        if (m_ambient.g > 1) m_ambient.g=1; 
+        m_ambient.y()+= 0.01;
+        if (m_ambient.y() > 1) m_ambient.y()=1; 
         break;
       case INC_LIGHT_B:
-        m_ambient.b+= 0.01;
-        if (m_ambient.b > 1) m_ambient.b=1; 
+        m_ambient.z()+= 0.01;
+        if (m_ambient.z() > 1) m_ambient.z()=1; 
         break;
       case DEC_LIGHT_R:
-        m_ambient.r-= 0.01;
-        if (m_ambient.r < 0) m_ambient.r=0; 
+        m_ambient.x()-= 0.01;
+        if (m_ambient.x() < 0) m_ambient.x()=0; 
         break;
       case DEC_LIGHT_G:  
-        m_ambient.g-= 0.01;
-        if (m_ambient.g < 0) m_ambient.g=0; 
+        m_ambient.y()-= 0.01;
+        if (m_ambient.y() < 0) m_ambient.y()=0; 
         break;
       case DEC_LIGHT_B:
-        m_ambient.b-= 0.01;
-        if (m_ambient.b < 0) m_ambient.b=0;
+        m_ambient.z()-= 0.01;
+        if (m_ambient.z() < 0) m_ambient.z()=0;
         break;
       case CP_ROTATION:
         rotate_clipping_plane();
@@ -894,143 +906,147 @@ namespace CGAL::GLFW {
   void Basic_Viewer::switch_axis(int axis) {
     if (axis == X_AXIS) {
       std::cout << "Constrained on X" << std::endl;
-      m_cstr_axis = {1.,0.,0.};
+      m_cstr_axis << 1., 0., 0.;
       return;
     }
     if (axis == Y_AXIS) {
       std::cout << "Constrained on Y" << std::endl;
-      m_cstr_axis = {0.,1.,0.};
+      m_cstr_axis << 0., 1., 0.;
       return;
     }
     if (axis == Z_AXIS) {
       std::cout << "Constrained on Z" << std::endl;
-      m_cstr_axis = {0.,0.,1.};
+      m_cstr_axis << 0., 0., 1.;
       return;
     }
     std::cout << "Constraint Axis Disabled" << std::endl;
   } 
 
   // Normalize Device Coordinates 
-  glm::vec2 Basic_Viewer::to_ndc(double x, double y) {
-    return { x / m_window_size.x * 2 - 1, y / m_window_size.y * 2 - 1 };
+  Basic_Viewer::vec2f Basic_Viewer::to_ndc(double x, double y) {
+    vec2f result;
+    result << 
+      x / m_window_size.x() * 2 - 1,
+      y / m_window_size.y() * 2 - 1;
+    
+    return result;
   }
 
   // mouse position mapped to the hemisphere 
-  glm::vec3 Basic_Viewer::mapping_cursor_toHemisphere(double x, double y) {
-    glm::vec3 pt = {x, y, 0.};
-    float xy_squared = pt.x*pt.x+pt.y*pt.y;
+  Basic_Viewer::vec3f Basic_Viewer::mapping_cursor_toHemisphere(double x, double y) {
+    vec3f pt { x, y, 0. };
+    float xy_squared = pt.x()*pt.x()+pt.y()*pt.y();
     if (xy_squared > .5) { // inside the sphere
-      pt.z = .5/sqrt(xy_squared);
-      pt = glm::normalize(pt);
+      pt.z() = .5/sqrt(xy_squared);
+      pt.normalize();
     } else {
       // x²+y²+z²=r² => z²=r²-x²-y²
-      pt.z = sqrt(1. - xy_squared);
+      pt.z() = sqrt(1. - xy_squared);
     } 
 
     if (m_cstr_axis_enum == NO_AXIS) return pt;
 
     // projection on the constraint axis 
-    float dot = glm::dot(pt, m_cstr_axis);
-    glm::vec3 proj = pt - (m_cstr_axis * dot);
-    float norm = glm::length(proj);
+    float dot = pt.dot(m_cstr_axis);
+    vec3f proj = pt - (m_cstr_axis * dot);
+    float norm = proj.norm();
 
     if (norm > 0.) {
       float s = 1./norm;
-      if (proj.z < 0.) s = -s;
+      if (proj.z() < 0.) s = -s;
       pt = proj * s; 
-    } else if (m_cstr_axis.z == 1.) {
-      pt = {1., 0., 0.};
+    } else if (m_cstr_axis.z() == 1.) {
+      pt << 1., 0., 0.;
     } else {
-      pt = {-m_cstr_axis.y, m_cstr_axis.x, 0.};
-      pt = glm::normalize(pt);
+      pt << -m_cstr_axis.y(), m_cstr_axis.x(), 0.;
+      pt.normalize();
     }
 
-    return pt;
+    return pt;  
   }
 
-  glm::mat4 Basic_Viewer::get_rotation(glm::vec3 const& start, glm::vec3 const& end) {
-    glm::vec3 rotation_axis = glm::cross(start, end);
-    float angle = acos(min(1.0, (double)glm::dot(start, end)));
+  Basic_Viewer::mat4f Basic_Viewer::get_rotation(vec3f const& start, vec3f const& end) {
+    vec3f rotation_axis = start.cross(end).normalized();
+    float dot = start.dot(end);
+    float angle = acos(std::min(1.f, dot));
 
     float d = m_clipping_plane_rot_speed;
     // std::cout << "theta angle : " << angle << std::endl;
-    return glm::rotate(glm::mat4(1.0), angle*d, rotation_axis);
+    Eigen::Affine3f transform{Eigen::AngleAxisf(angle*d, rotation_axis).toRotationMatrix()};
+    return transform.matrix();
   }
 
   /*********************CLIP STUFF**********************/
 
   void Basic_Viewer::rotate_clipping_plane() {
-    glm::vec2 cursor_old = get_cursor_old();
-    glm::vec2 cursor_current = get_cursor();
+    vec2f cursor_old = get_cursor_old();
+    vec2f cursor_current = get_cursor();
 
-    if (cursor_current.x == cursor_old.x && 
-        cursor_current.y == cursor_old.y) return;
+    if (cursor_current.x() == cursor_old.x() && 
+        cursor_current.y() == cursor_old.y()) return;
+  
+    vec2f old_pos = to_ndc(cursor_old.x(), cursor_old.y()); 
+    vec3f start = mapping_cursor_toHemisphere(old_pos.x(), old_pos.y());
 
-    glm::vec2 old_pos = to_ndc(cursor_old.x, cursor_old.y); 
-    glm::vec3 start = mapping_cursor_toHemisphere(old_pos.x, old_pos.y);
+    vec2f crr_pos = to_ndc(cursor_current.x(), cursor_current.y()); 
+    vec3f end = mapping_cursor_toHemisphere(crr_pos.x(), crr_pos.y());
 
-    glm::vec2 crr_pos = to_ndc(cursor_current.x, cursor_current.y); 
-    glm::vec3 end = mapping_cursor_toHemisphere(crr_pos.x, crr_pos.y);
-
-    glm::mat4 rotation = get_rotation(start, end);
+    mat4f rotation = get_rotation(start, end);
     m_clipping_matrix = rotation * m_clipping_matrix;
-
-    // std::cout << "mvp : [" << clipping_mMatrix[0].x << ", " << clipping_mMatrix[0].y << ", " << clipping_mMatrix[0].z << ", " << clipping_mMatrix[0].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[1].x << ", " << clipping_mMatrix[1].y << ", " << clipping_mMatrix[1].z << ", " << clipping_mMatrix[1].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[2].x << ", " << clipping_mMatrix[2].y << ", " << clipping_mMatrix[2].z << ", " << clipping_mMatrix[2].w << ", \n";
-    // std::cout << "       " << clipping_mMatrix[3].x << ", " << clipping_mMatrix[3].y << ", " << clipping_mMatrix[3].z << ", " << clipping_mMatrix[3].w << "] \n";
-    // std::cout << std::endl;
   }
 
   void Basic_Viewer::translate_clipping_plane() {
-    glm::vec2 mouse_current = get_cursor(); 
-
+    vec2f mouse_current = get_cursor(); 
     const float d = m_clipping_plane_move_speed;
 
-    glm::vec3 dir = {get_cursor_delta(), 0.0f};
+    vec2f delta = get_cursor_delta();
+    vec3f dir;
+    dir << delta.x(), delta.y(), 0.0f;
 
-    glm::vec3 up = {0, 1, 0};
-    glm::vec3 right = glm::normalize(-glm::cross(up, m_cam_forward)); 
-    up = glm::normalize(glm::cross(m_cam_forward, right));
+    vec3f up {0, 1, 0};
+    vec3f right = (-up.cross(m_cam_forward)).normalized(); 
+    up = m_cam_forward.cross(right).normalized();
 
-    glm::vec3 result = 
-      dir.x * right * d + 
-      dir.y * up * d;
+    vec3f result = 
+      dir.x() * right * d + 
+      dir.y() * up * d;
 
-    glm::mat4 translation = glm::translate(glm::mat4(1.), result); 
+    Eigen::Affine3f transform { Eigen::Translation3f(result) };
+    mat4f translation = transform.matrix(); 
     m_clipping_matrix = translation * m_clipping_matrix;  
   }
 
   void Basic_Viewer::translate_clipping_plane_cam_dir() {
 
-    glm::vec2 cursor_delta = get_cursor_delta();
+    vec2f cursor_delta = get_cursor_delta();
 
-    float s = cursor_delta.x;
-    if (abs(cursor_delta.y) > abs(cursor_delta.x))
-      s = -cursor_delta.y;
+    float s = cursor_delta.x();
+    if (abs(cursor_delta.y()) > abs(cursor_delta.x()))
+      s = -cursor_delta.y();
     
     s *= m_clipping_plane_move_speed;
-    glm::mat4 translation = glm::translate(glm::mat4(1.), s * m_cam_forward); 
+    Eigen::Affine3f transform { Eigen::Translation3f(s * m_cam_forward) };
+    mat4f translation = transform.matrix(); 
     m_clipping_matrix = translation * m_clipping_matrix;  
   }
 
   /*********************CAM STUFF**********************/
 
-  void Basic_Viewer::translate(glm::vec3 dir){
+  void Basic_Viewer::translate(vec3f dir){
     const float delta = 1.0f/60;
-    glm::vec3 right = glm::normalize(glm::cross(glm::vec3{0, 1, 0}, m_cam_forward)); 
-    glm::vec3 up = glm::cross(m_cam_forward, right);
+    vec3f right = vec3f(0, 1, 0).cross(m_cam_forward).normalized(); 
+    vec3f up = m_cam_forward.cross(right);
 
-    glm::vec3 result = 
-      dir.x * right * delta +
-      dir.y * up * delta +
-      dir.z * m_cam_forward * delta;
+    vec3f result = 
+      dir.x() * right * delta +
+      dir.y() * up * delta +
+      dir.z() * m_cam_forward * delta;
 
     m_cam_position += result;
   }
 
   void Basic_Viewer::mouse_rotate(){
-    glm::vec2 cursor_delta = glm::radians(get_cursor_delta());
+    vec2f cursor_delta = radians(get_cursor_delta());
 
     if (m_cam_rotation_mode == FREE){
       m_cam_view += cursor_delta * m_cam_rotation_speed;
@@ -1041,19 +1057,20 @@ namespace CGAL::GLFW {
     }
 
     m_scene_view += cursor_delta * m_scene_rotation_speed;
-    m_scene_rotation = glm::eulerAngleXY(-m_scene_view.y, m_scene_view.x);
+    m_scene_rotation = eulerAngleXY(-m_scene_view.y(), m_scene_view.x());
   }
 
   void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
     m_cam_mode = mode;
 
-    float ratio = (float)m_window_size.x/(float)m_window_size.y;
+    float ratio = (float)m_window_size.x()/m_window_size.y();
 
     if (m_cam_mode == PERSPECTIVE){
-      m_cam_projection = glm::perspective(glm::radians(45.f), (float)m_window_size.x/(float)m_window_size.y, 0.1f, 1000.0f);
+      m_cam_projection = perspective(radians(45.f), ratio, 0.1f, 1000.0f);
       return;
     }
-    m_cam_projection = glm::ortho(0.0f, m_cam_orth_zoom * ratio, 0.0f, m_cam_orth_zoom, 0.1f, 100.0f);
+    
+    m_cam_projection = ortho(0.0f, m_cam_orth_zoom * ratio, 0.0f, m_cam_orth_zoom, 0.1f, 100.0f);
   }
 
   void Basic_Viewer::switch_rotation_mode() {
@@ -1074,27 +1091,29 @@ namespace CGAL::GLFW {
       GLFWmonitor* monitor = glfwGetMonitors(&count)[0];
       const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-      glfwGetWindowPos(m_window, &m_old_window_pos.x, &m_old_window_pos.y); 
+      glfwGetWindowPos(m_window, &m_old_window_pos.x(), &m_old_window_pos.y()); 
       glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
       glViewport(0, 0, mode->width, mode->height);
 
-      std::cout << m_window_size.x << " " << m_window_size.y;
+      std::cout << m_window_size.x() << " " << m_window_size.y();
       return;
     }
 
     m_window_size = m_old_window_size;
-    glfwSetWindowMonitor(m_window, nullptr, m_old_window_pos.x, m_old_window_pos.y, m_window_size.x, m_window_size.y, 60);
-    glViewport(0, 0, m_window_size.x, m_window_size.y);
+    glfwSetWindowMonitor(m_window, nullptr, m_old_window_pos.x(), m_old_window_pos.y(), m_window_size.x(), m_window_size.y(), 60);
+    glViewport(0, 0, m_window_size.x(), m_window_size.y());
 
   }
 
   void Basic_Viewer::mouse_translate(){
-    glm::vec3 cursor_delta = {get_cursor_delta(), 0};
+    vec2f delta2 = get_cursor_delta();
+    vec3f cursor_delta;
+    cursor_delta << delta2.x(), delta2.y(), 0;
 
-    if (cursor_delta.x == 0 && cursor_delta.y == 0)
+    if (cursor_delta.x() == 0 && cursor_delta.y() == 0)
       return;
     
-    translate(glm::normalize(cursor_delta) * m_cam_speed);
+    translate(cursor_delta.normalized() * m_cam_speed);
   }
 
   void Basic_Viewer::print_help(){
@@ -1153,23 +1172,23 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::screenshot(const std::string& filepath) {
-    // https://lencerf.github.io/post/2019-09-21-save-the-opengl-rendering-to-image-file/ (thanks)
+    // https://lencerf.y()ithub.io/post/2019-09-21-save-the-opengl-rendering-to-image-file/ (thanks)
     // https://github.com/nothings/stb/
     // The stb lib used here is from glfw/deps 
     
     const GLsizei nrChannels = 3;
-    GLsizei stride = nrChannels * m_window_size.x;
+    GLsizei stride = nrChannels * m_window_size.x();
     stride += (stride % 4) ? (4 - stride % 4) : 0; // stride must be a multiple of 4
-    GLsizei bufferSize = stride * m_window_size.y;
+    GLsizei bufferSize = stride * m_window_size.y();
 
     std::vector<char> buffer(bufferSize);
 
     glPixelStorei(GL_PACK_ALIGNMENT, 4);
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, m_window_size.x, m_window_size.y, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+    glReadPixels(0, 0, m_window_size.x(), m_window_size.y(), GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
 
     stbi_flip_vertically_on_write(true);
-    stbi_write_png(filepath.data(), m_window_size.x, m_window_size.y, nrChannels, buffer.data(), stride);
+    stbi_write_png(filepath.data(), m_window_size.x(), m_window_size.y(), nrChannels, buffer.data(), stride);
   }
 
   // Blocking call

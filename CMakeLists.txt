@@ -45,6 +45,8 @@ target_link_libraries(draw_surface_mesh_height glfw CGAL::CGAL)
 target_link_libraries(screenshot glfw CGAL::CGAL)
 
 if(TARGET CGAL::Eigen3_support)
+  target_link_libraries(GLFW_Basicv CGAL::Eigen3_support)
+  target_link_libraries(draw_surface_mesh_height CGAL::Eigen3_support)
   target_link_libraries(draw_mesh_and_points CGAL::Eigen3_support)
 endif()
 
