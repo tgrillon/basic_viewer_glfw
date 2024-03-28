@@ -6,7 +6,6 @@
 #include <string>
 #include <cctype>
 #include <iomanip>
-// #include <glm/glm.hpp>
 #include <eigen3/Eigen/Core>
 
 /**

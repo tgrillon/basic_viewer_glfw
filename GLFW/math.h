@@ -2,7 +2,6 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-// #include <glm/glm.hpp>
 #include <eigen3/Eigen/Core>
 
 // https://en.wikipedia.org/wiki/Spherical_coordinate_system

@@ -28,11 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/euler_angles.hpp>
-
 #include "Shader.h"
 #include "Input.h"
 #include "Bv_Settings.h"
@@ -92,14 +87,14 @@ namespace CGAL::GLFW {
     /***** Getter & Setter ****/
     
     // Setter Section
-    inline void position(const vec3&f pos) { m_cam_position = pos; }
-    inline void forward(const vec3&f dir) { m_cam_forward = dir; }
+    inline void position(const vec3f& pos) { m_cam_position = pos; }
+    inline void forward(const vec3f& dir) { m_cam_forward = dir; }
     inline void set_scene(const Graphics_scene* scene) { 
       m_scene = scene;
       m_is_scene_loaded = false;
     }
-    inline void window_size(const glm::vec2& size){
-      window_size_callback(m_window, size.x, size.y);
+    inline void window_size(const vec2f& size){
+      window_size_callback(m_window, size.x(), size.y());
     }
 
     inline void vertices_mono_color(const CGAL::IO::Color& c) { m_vertices_mono_color = c; }
@@ -113,10 +108,10 @@ namespace CGAL::GLFW {
     inline void size_rays(const float size) { m_size_rays = size; }
     inline void size_lines(const float size) { m_size_lines = size; }
 
-    inline void light_position(const glm::vec4& pos) { m_light_position = pos; }
-    inline void light_ambient(const glm::vec4& color) { m_ambient = color; }
-    inline void light_diffuse(const glm::vec4& color) { m_diffuse = color; }
-    inline void light_specular(const glm::vec4& color) { m_specular = color; }
+    inline void light_position(const vec4f& pos) { m_light_position = pos; }
+    inline void light_ambient(const vec4f& color) { m_ambient = color; }
+    inline void light_diffuse(const vec4f& color) { m_diffuse = color; }
+    inline void light_specular(const vec4f& color) { m_specular = color; }
     inline void light_shininess(const float shininess) { m_shininess = shininess; }
 
     inline void draw_vertices(bool b) { m_draw_vertices = b; }
@@ -129,8 +124,8 @@ namespace CGAL::GLFW {
     inline void flat_shading(bool b) { m_flat_shading = b; }
     
     // Getter section
-    inline glm::vec3 position() const { return m_cam_position; }
-    inline glm::vec3 forward() const { return m_cam_forward; }
+    inline vec3f position() const { return m_cam_position; }
+    inline vec3f forward() const { return m_cam_forward; }
 
     inline CGAL::IO::Color vertices_mono_color() const { return m_vertices_mono_color; }
     inline CGAL::IO::Color edges_mono_color() const { return m_edges_mono_color; }
@@ -143,10 +138,10 @@ namespace CGAL::GLFW {
     inline float size_rays() const { return m_size_rays; }
     inline float size_lines() const { return m_size_lines; }
     
-    inline glm::vec4 light_position() const { return m_light_position; }
-    inline glm::vec4 light_ambient() const { return m_ambient; }
-    inline glm::vec4 light_diffuse() const { return m_diffuse; }
-    inline glm::vec4 light_specular() const { return m_specular; }
+    inline vec4f light_position() const { return m_light_position; }
+    inline vec4f light_ambient() const { return m_ambient; }
+    inline vec4f light_diffuse() const { return m_diffuse; }
+    inline vec4f light_specular() const { return m_specular; }
     inline float light_shininess() const { return m_shininess; }
 
     inline bool draw_vertices()  const { return m_draw_vertices; }
