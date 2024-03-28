@@ -84,7 +84,7 @@ public:
 
 protected:
   void on_key_event(int key, int scancode, int action, int mods);
-  void on_cursor_event(double xpos, double ypo);
+  void on_cursor_event(double xpos, double ypos);
   void on_mouse_btn_event(int button, int action, int mods);
   void on_scroll_event(double xoffset, double yoffset);
   void handle_events();
@@ -234,10 +234,10 @@ void Input::on_key_event(int key, int scancode, int action, int mods){
   }
 }
 
-void Input::on_cursor_event(double xpos, double ypo) {
-  cursor_delta << xpos - cursor.x(), ypo - cursor.y();
+void Input::on_cursor_event(double xpos, double ypos) {
+  cursor_delta << xpos - cursor.x(), ypos - cursor.y();
   cursor_old = cursor;
-  cursor << xpos, ypo;
+  cursor << xpos, ypos;
 }
 
 void Input::on_scroll_event(double xoffset, double yoffset) {
