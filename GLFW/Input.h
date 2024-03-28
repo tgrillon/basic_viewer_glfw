@@ -97,6 +97,7 @@ private:
 };
 
 std::string key_name(int key) {
+  // https://www.glfw.org/docs/3.3/group__keys.html
   std::string result = "???";
 
   if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F25) {// F1-25
@@ -110,18 +111,39 @@ std::string key_name(int key) {
     result += char(key - (GLFW_KEY_KP_0 - '0'));
     return result;
   }
-
+  // Keys from 256 to 284 and 340 to 348
   switch (key) {
-    case GLFW_KEY_UP: return "UP";
-    case GLFW_KEY_DOWN: return "DOWN";
-    case GLFW_KEY_LEFT: return "LEFT";
+    case GLFW_KEY_SPACE: return "SPACE";
+
+    case GLFW_KEY_ESCAPE: return "ESC";
+    case GLFW_KEY_ENTER: return "ENTER";
+    case GLFW_KEY_TAB: return "TAB";
+    case GLFW_KEY_BACKSPACE: return "BSPACE";
+    case GLFW_KEY_INSERT: return "INS";
+    case GLFW_KEY_DELETE: return "DEL";
     case GLFW_KEY_RIGHT: return "RIGHT";
-    case GLFW_KEY_RIGHT_SHIFT: return "RSHIFT";
+    case GLFW_KEY_LEFT: return "LEFT";
+    case GLFW_KEY_UP: return "UP";  
+    case GLFW_KEY_DOWN: return "DOWN";  
+    case GLFW_KEY_PAGE_UP: return "PgUP";
+    case GLFW_KEY_PAGE_DOWN: return "PgDOWN"; 
+    case GLFW_KEY_HOME: return "HOME";
+    case GLFW_KEY_END: return "END";
+    case GLFW_KEY_CAPS_LOCK: return "CAPS";
+    case GLFW_KEY_SCROLL_LOCK: return "ScrollLOCK";
+    case GLFW_KEY_NUM_LOCK: return "NumLOCK";
+    case GLFW_KEY_PRINT_SCREEN: return "PRINT";
+    case GLFW_KEY_PAUSE: return "PAUSE";
+
     case GLFW_KEY_LEFT_SHIFT: return "LSHIFT";
     case GLFW_KEY_LEFT_CONTROL: return "LCTRL";
-    case GLFW_KEY_RIGHT_CONTROL: return "RCTRL";
     case GLFW_KEY_LEFT_ALT: return "LALT";
+    case GLFW_KEY_LEFT_SUPER: return "LSUPER";
+    case GLFW_KEY_RIGHT_SHIFT: return "RSHIFT";
+    case GLFW_KEY_RIGHT_CONTROL: return "RCTRL";
     case GLFW_KEY_RIGHT_ALT: return "RALT";
+    case GLFW_KEY_RIGHT_SUPER: return "RSUPER";
+    case GLFW_KEY_MENU: return "MENU";
   }
 
   const char* name = glfwGetKeyName(key, 0);

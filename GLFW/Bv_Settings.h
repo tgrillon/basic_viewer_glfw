@@ -87,6 +87,15 @@
 #define CAM_ROT_SPEED 0.05f 
 #endif
 
+#ifndef CLIPPING_PLANE_MOVE_SPEED
+#define CLIPPING_PLANE_MOVE_SPEED 0.04f 
+#endif
+
+#ifndef CLIPPING_PLANE_ROT_SPEED
+#define CLIPPING_PLANE_ROT_SPEED 4.f 
+#endif
+
+
 #ifndef SCENE_ROT_SPEED
 #define SCENE_ROT_SPEED 0.5f
 #endif

@@ -970,8 +970,9 @@ namespace CGAL::GLFW {
     float dot = start.dot(end);
     float angle = acos(std::min(1.f, dot));
 
+    float d = m_clipping_plane_rot_speed;
     // std::cout << "theta angle : " << angle << std::endl;
-    Eigen::Affine3f transform{Eigen::AngleAxisf(angle*4.f, rotation_axis).toRotationMatrix()};
+    Eigen::Affine3f transform{Eigen::AngleAxisf(angle*d, rotation_axis).toRotationMatrix()};
     return transform.matrix();
   }
 
@@ -996,7 +997,7 @@ namespace CGAL::GLFW {
 
   void Basic_Viewer::translate_clipping_plane() {
     vec2f mouse_current = get_cursor(); 
-    const float d = 0.01;
+    const float d = m_clipping_plane_move_speed;
 
     vec2f delta = get_cursor_delta();
     vec3f dir;
@@ -1016,7 +1017,6 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::translate_clipping_plane_cam_dir() {
-    const float d = 0.02;
 
     vec2f cursor_delta = get_cursor_delta();
 
@@ -1024,7 +1024,7 @@ namespace CGAL::GLFW {
     if (abs(cursor_delta.y()) > abs(cursor_delta.x()))
       s = -cursor_delta.y();
     
-    s *= d;
+    s *= m_clipping_plane_move_speed;
     Eigen::Affine3f transform { Eigen::Translation3f(s * m_cam_forward) };
     mat4f translation = transform.matrix(); 
     m_clipping_matrix = translation * m_clipping_matrix;  
