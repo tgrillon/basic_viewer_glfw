@@ -16,6 +16,9 @@
 
 #include <CGAL/Graphics_scene.h>
 #include <CGAL/Basic_shaders.h>
+#include <CGAL/Aff_transformation_3.h>
+#include <CGAL/Plane_3.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Geometry>
@@ -64,6 +67,8 @@ namespace CGAL::GLFW {
 
   class Basic_Viewer : public Input {
   public: 
+    typedef CGAL::Exact_predicates_inexact_constructions_kernel Local_kernel;
+
     typedef Eigen::Matrix4f mat4f;
     typedef Eigen::Vector4f vec4f;
     typedef Eigen::Vector3f vec3f;
@@ -135,6 +140,8 @@ namespace CGAL::GLFW {
 
     inline bool clipping_plane_enable() const { return m_use_clipping_plane != CLIPPING_PLANE_OFF; }
     inline bool is_orthograpic() const { return m_cam_mode == ORTHOGRAPHIC; }
+
+    CGAL::Plane_3<Local_kernel> clipping_plane() const;
     
   private:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -255,7 +262,7 @@ namespace CGAL::GLFW {
     vec3f m_cam_forward {0, 0, 1};
     float m_cam_orth_zoom = 1.0f;
 
-    vec2f m_scene_view;
+    vec2f m_scene_view {0.0f, 0.0f};
     mat4f m_scene_rotation = mat4f::Identity();
 
     vec2i m_window_size {WINDOW_WIDTH_INIT, WINDOW_HEIGHT_INIT};
@@ -276,7 +283,7 @@ namespace CGAL::GLFW {
 
     int m_cstr_axis_enum = NO_AXIS;
     vec3f m_cstr_axis {1., 0., 0.};
-
+    
     mat4f m_clipping_matrix = mat4f::Identity();
 
     enum Axis {

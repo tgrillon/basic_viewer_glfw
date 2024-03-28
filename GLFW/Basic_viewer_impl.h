@@ -273,6 +273,19 @@ namespace CGAL::GLFW {
     m_are_buffers_initialized = true;
   }
 
+  CGAL::Plane_3<Basic_Viewer::Local_kernel> Basic_Viewer::clipping_plane() const
+  {
+    const mat4f cpm = m_clipping_matrix;
+    CGAL::Aff_transformation_3<Basic_Viewer::Local_kernel> aff(
+      cpm(0,0), cpm(0,1), cpm(0,2), cpm(0,3),
+      cpm(1,0), cpm(1,1), cpm(1,2), cpm(1,3),
+      cpm(2,0), cpm(2,1), cpm(2,2), cpm(2,3)
+    );
+
+    CGAL::Plane_3<Local_kernel> p3(0, 0, 1, 0);
+    return p3.transform(aff);
+  }
+
   void Basic_Viewer::update_uniforms(){
     m_model_view = lookAt(m_cam_position, m_cam_position + m_cam_forward, vec3f(0,1,0)) * m_scene_rotation;
 
@@ -290,7 +303,6 @@ namespace CGAL::GLFW {
 
     m_face_shader.setMatrix4f("mvp_matrix", m_mvp.data());
     m_face_shader.setMatrix4f("mv_matrix", m_model_view.data());
-    // face_shader.setFloat("point_size", m_size_points);
     
     m_face_shader.setVec4f("light_pos", m_light_position.data());
     m_face_shader.setVec4f("light_diff", m_diffuse.data());
@@ -950,7 +962,7 @@ namespace CGAL::GLFW {
       pt.normalize();
     }
 
-    return pt;
+    return pt;  
   }
 
   Basic_Viewer::mat4f Basic_Viewer::get_rotation(vec3f const& start, vec3f const& end) {
@@ -971,7 +983,7 @@ namespace CGAL::GLFW {
 
     if (cursor_current.x() == cursor_old.x() && 
         cursor_current.y() == cursor_old.y()) return;
-
+  
     vec2f old_pos = to_ndc(cursor_old.x(), cursor_old.y()); 
     vec3f start = mapping_cursor_toHemisphere(old_pos.x(), old_pos.y());
 
@@ -1046,7 +1058,6 @@ namespace CGAL::GLFW {
 
     m_scene_view += cursor_delta * m_scene_rotation_speed;
     m_scene_rotation = eulerAngleXY(-m_scene_view.y(), m_scene_view.x());
-    // m_scene_rotation = glm::eulerAngleXY(-m_scene_view.y(), m_scene_view.x());
   }
 
   void Basic_Viewer::set_cam_mode(CAM_MODE mode) {
