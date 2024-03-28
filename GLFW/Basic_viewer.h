@@ -284,6 +284,8 @@ namespace CGAL::GLFW {
     
     bool m_clipping_plane_rendering = true; // will be toggled when alt+c is pressed, which is used for indicating whether or not to render the clipping plane ;
     float m_clipping_plane_rendering_transparency = CLIPPING_PLANE_RENDERING_TRANSPARENCY; // to what extent the transparent part should be rendered;
+    float m_clipping_plane_move_speed = CLIPPING_PLANE_MOVE_SPEED;
+    float m_clipping_plane_rot_speed = CLIPPING_PLANE_ROT_SPEED;
 
     int m_cstr_axis_enum = NO_AXIS;
     glm::vec3 m_cstr_axis = {1., 0., 0.};

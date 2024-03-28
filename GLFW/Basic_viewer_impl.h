@@ -952,8 +952,9 @@ namespace CGAL::GLFW {
     glm::vec3 rotation_axis = glm::cross(start, end);
     float angle = acos(min(1.0, (double)glm::dot(start, end)));
 
+    float d = m_clipping_plane_rot_speed;
     // std::cout << "theta angle : " << angle << std::endl;
-    return glm::rotate(glm::mat4(1.0), angle*2.f, rotation_axis);
+    return glm::rotate(glm::mat4(1.0), angle*d, rotation_axis);
   }
 
   /*********************CLIP STUFF**********************/
@@ -984,7 +985,7 @@ namespace CGAL::GLFW {
   void Basic_Viewer::translate_clipping_plane() {
     glm::vec2 mouse_current = get_cursor(); 
 
-    const float d = 0.01;
+    const float d = m_clipping_plane_move_speed;
 
     glm::vec3 dir = {get_cursor_delta(), 0.0f};
 
@@ -1001,7 +1002,6 @@ namespace CGAL::GLFW {
   }
 
   void Basic_Viewer::translate_clipping_plane_cam_dir() {
-    const float d = 0.02;
 
     glm::vec2 cursor_delta = get_cursor_delta();
 
@@ -1009,7 +1009,7 @@ namespace CGAL::GLFW {
     if (abs(cursor_delta.y) > abs(cursor_delta.x))
       s = -cursor_delta.y;
     
-    s *= d;
+    s *= m_clipping_plane_move_speed;
     glm::mat4 translation = glm::translate(glm::mat4(1.), s * m_cam_forward); 
     m_clipping_matrix = translation * m_clipping_matrix;  
   }
