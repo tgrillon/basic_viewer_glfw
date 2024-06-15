@@ -63,7 +63,7 @@ Eigen::Matrix4f perspective(float fov, float aspect, float zNear, float zFar)
 {
   assert(std::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0);
 
-  const float tanHalfFov = std::tan(fov / 2.0);
+  const float tanHalfFov = std::tan(fov * 0.5);
   Eigen::Matrix4f result = Eigen::Matrix4f::Zero();
   result(0, 0) = 1.0 / (aspect * tanHalfFov); 
   result(1, 1) = 1.0 / (tanHalfFov); 

@@ -8,18 +8,11 @@ find_package(CGAL REQUIRED COMPONENTS Core)
 find_package(Eigen3 3.1.0)
 include(CGAL_Eigen3_support)
 
-add_subdirectory (GLFW/vendor/glfw)
-add_subdirectory (GLFW/vendor/glm)
 
 include_directories (
     .
     GLFW/vendor/glfw/deps/
-    GLFW/vendor/glfw/include/
     GLFW/vendor/glad/include/
-    GLFW/vendor/glm/
-    GLFW/vendor/stb/
-
-    ${CGAL_DIR}/Basic_viewer/include/ # TEMPO
 )
 
 
